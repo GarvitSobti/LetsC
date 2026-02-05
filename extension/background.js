@@ -25,4 +25,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Broadcast stats update to popup if open
     chrome.runtime.sendMessage(request);
   }
+  // Forward demo control messages to all tabs so content scripts receive them
+  if (request.type && request.type.startsWith && request.type.startsWith('DEMO')) {
+    chrome.tabs.query({}, function (tabs) {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, request, function () {
+            // ignore per-tab errors
+            if (chrome.runtime.lastError) {
+              // console.log('Forward to tab failed', chrome.runtime.lastError.message);
+            }
+          });
+        }
+      });
+    });
+  }
 });
