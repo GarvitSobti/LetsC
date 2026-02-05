@@ -215,7 +215,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       }
 
       // Clear assistance immediately
-      if (assistedElement.hasAttribute('data-steady-assist')) {
+      if (assistedElement && assistedElement.hasAttribute('data-steady-assist')) {
         clearTimeout(hesitationTimer);
         setTimeout(() => {
           clearAssistanceForElement(assistedElement);
@@ -370,6 +370,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function clearAssistanceForElement(element) {
+    if (!element) return; // Guard against null element
     if (element.hasAttribute('data-steady-assist')) {
       graduallyRestoreUI(element);
     }
