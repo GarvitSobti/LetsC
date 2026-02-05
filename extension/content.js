@@ -267,7 +267,6 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function applyAssistance(element, reason) {
     if (!visualFeedback) return;
-    if (element.hasAttribute('data-steady-assist')) return;
 
     // Mark element as assisted
     element.setAttribute('data-steady-assist', reason);
@@ -310,6 +309,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     const originalPadding = element.getAttribute('data-original-padding');
     if (originalPadding === null) {
       element.setAttribute('data-original-padding', styles.padding);
+      const rect = element.getBoundingClientRect();
+      element.setAttribute('data-original-width', `${rect.width}`);
+      element.setAttribute('data-original-height', `${rect.height}`);
       basePadding = {
         top: parseFloat(styles.paddingTop) || 0,
         right: parseFloat(styles.paddingRight) || 0,
@@ -350,10 +352,19 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       }
     }
 
-    element.style.paddingTop = `${basePadding.top + additionalPadding}px`;
-    element.style.paddingRight = `${basePadding.right + additionalPadding}px`;
-    element.style.paddingBottom = `${basePadding.bottom + additionalPadding}px`;
-    element.style.paddingLeft = `${basePadding.left + additionalPadding}px`;
+    const originalWidth = parseFloat(
+      element.getAttribute('data-original-width') || '0'
+    );
+    const originalHeight = parseFloat(
+      element.getAttribute('data-original-height') || '0'
+    );
+    const maxAdd = Math.min(originalWidth, originalHeight) / 2;
+    const cappedPadding = Math.min(additionalPadding, maxAdd);
+
+    element.style.paddingTop = `${basePadding.top + cappedPadding}px`;
+    element.style.paddingRight = `${basePadding.right + cappedPadding}px`;
+    element.style.paddingBottom = `${basePadding.bottom + cappedPadding}px`;
+    element.style.paddingLeft = `${basePadding.left + cappedPadding}px`;
   }
 
   function attachExitListeners(element) {
@@ -406,6 +417,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     if (originalPadding !== null) {
       element.style.padding = originalPadding;
       element.removeAttribute('data-original-padding');
+      element.removeAttribute('data-original-width');
+      element.removeAttribute('data-original-height');
     }
 
     // Remove highlight
