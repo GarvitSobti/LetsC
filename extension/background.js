@@ -26,13 +26,13 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'STATS_UPDATE') {
     // Broadcast stats update to popup if open
-    try {
-      chrome.runtime.sendMessage(request, () => {
-        // Ignore if no receiver (popup closed)
-        if (chrome.runtime.lastError) return;
-      });
-    } catch (err) {
-      // Ignore context errors
-    }
+    chrome.runtime.sendMessage(request, () => {
+      // Ignore errors if popup is not open
+      if (chrome.runtime.lastError) {
+        // Popup not open, that's fine
+        return;
+      }
+    });
   }
+  return true; // Keep message channel open
 });
