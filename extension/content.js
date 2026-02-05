@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v8';
+const STEADY_ASSIST_BUILD = 'v9';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -182,7 +182,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   function handleMouseOver(e) {
     if (!isEnabled) return;
 
-    const element = e.target;
+    const element = getButtonLikeElement(e.target);
+    if (!element) return;
 
     // Check if element is interactive
     if (isInteractiveElement(element)) {
@@ -199,7 +200,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   function handleMouseOut(e) {
     if (!isEnabled) return;
 
-    const element = e.target;
+    const element = getButtonLikeElement(e.target);
+    if (!element) return;
 
     // Clear hesitation timer when mouse leaves
     if (element === currentTarget) {
@@ -447,16 +449,50 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       return type === 'button' || type === 'submit' || type === 'reset';
     }
 
+    const role = (element.getAttribute('role') || '').toLowerCase();
+    if (role === 'button') return true;
+
+    if (window.getComputedStyle(element).cursor === 'pointer') {
+      const nonButtons = ['input', 'textarea', 'select'];
+      if (!nonButtons.includes(tagName)) return true;
+    }
+
     return false;
+  }
+
+  function getButtonLikeElement(element) {
+    if (!element) return null;
+    if (isButtonElement(element)) return element;
+
+    const candidate = element.closest(
+      'button, input, [role="button"], a, div, span'
+    );
+    if (!candidate) return null;
+
+    if (isButtonElement(candidate)) return candidate;
+
+    const tagName = candidate.tagName.toLowerCase();
+    if (tagName === 'input' || tagName === 'textarea' || tagName === 'select')
+      return null;
+
+    if ((candidate.getAttribute('role') || '').toLowerCase() === 'button')
+      return candidate;
+    if (window.getComputedStyle(candidate).cursor === 'pointer')
+      return candidate;
+
+    return null;
   }
 
   function findNearbyInteractiveElements(position) {
     const elements = document.elementsFromPoint(position.x, position.y);
     const nearby = [];
+    const seen = new Set();
 
     elements.forEach(el => {
-      if (isInteractiveElement(el)) {
-        nearby.push(el);
+      const buttonEl = getButtonLikeElement(el);
+      if (buttonEl && isInteractiveElement(buttonEl) && !seen.has(buttonEl)) {
+        seen.add(buttonEl);
+        nearby.push(buttonEl);
       }
     });
 
