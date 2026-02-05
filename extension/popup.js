@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function sendMessageToActiveTab(message) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, message, function(response) {
+        chrome.tabs.sendMessage(tabs[0].id, message, function (response) {
           // Ignore errors - content script might not be ready
           if (chrome.runtime.lastError) {
             console.log('Message not sent:', chrome.runtime.lastError.message);

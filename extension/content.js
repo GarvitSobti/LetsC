@@ -5,7 +5,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
 (function () {
   'use strict';
-  
+
   console.log('🟢 INSIDE IIFE - SCRIPT STARTING');
 
   // State
