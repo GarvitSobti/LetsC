@@ -1,31 +1,86 @@
-# Steady Assist - Chrome Extension
+# Steady Assist - AI-Powered Accessibility Assistant
 
-## Quick Start (Load the Extension)
+> Making the web accessible for users with motor impairments through intelligent cursor assistance
 
-### Step 1: Create Icons
+## Installation
 
-You need 3 icon sizes. For now, use any simple icon or create colored squares:
+### Prerequisites
 
-- `icons/icon16.png` (16x16px)
-- `icons/icon48.png` (48x48px)
-- `icons/icon128.png` (128x128px)
+The extension icons are already included in the `icons/` folder. No additional setup needed!
 
-**Quick fix:** Visit https://www.favicon-generator.org/ and upload any simple image to generate all sizes.
+### Loading the Extension
 
-### Step 2: Load Extension in Chrome
+1. **Open Chrome Extensions Page**
+   - Go to `chrome://extensions/`
+   - OR click the puzzle icon → "Manage Extensions"
 
-1. Open Chrome and go to: `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the `extension` folder: `c:\Users\GARVIT\LetsC\extension`
-5. Extension should appear in your toolbar!
+2. **Enable Developer Mode**
+   - Toggle "Developer mode" in the top-right corner
 
-### Step 3: Test It
+3. **Load the Extension**
+   - Click "Load unpacked"
+   - Navigate to and select: `c:\Users\GARVIT\LetsC\extension`
+   - Click "Select Folder"
 
-1. Go to any website (try a pharmacy site or complex form)
-2. Click the extension icon to open popup
-3. Make sure "Enable Assistance" is ON
-4. Move your mouse slowly over buttons - watch the magic happen!
+4. **Verify Installation**
+   - You should see "Steady Assist" in your extensions list
+   - The extension icon should appear in your toolbar
+   - Status should show "Errors: 0"
+
+### First-Time Setup
+
+1. **Pin the Extension** (optional)
+   - Click the puzzle icon in Chrome toolbar
+   - Find "Steady Assist" and click the pin icon
+
+2. **Configure Settings**
+   - Click the Steady Assist icon
+   - Ensure "Enable Assistance" is ON (green)
+   - Adjust sensitivity (1-5, default is 3)
+   - Enable visual feedback for better visibility
+
+3. **Test It Out**
+   - Go to any website with buttons (e.g., Google, Amazon)
+   - **IMPORTANT:** Refresh the page (F5) after loading extension
+   - Hover slowly over a button for 2 seconds
+   - Watch it expand and highlight automatically!
+
+## Troubleshooting
+
+### Extension Not Working?
+
+**Problem:** Buttons not expanding, no visual feedback
+
+**Solution:**
+1. Go to `chrome://extensions/`
+2. Find "Steady Assist" and click the **Reload** button (circular arrow)
+3. Go to your test website and **refresh the page** (F5)
+4. Open Console (F12 → Console tab)
+5. Look for: `✅ Steady Assist: Ready and listening!`
+
+**If you don't see console messages:**
+- The page was loaded BEFORE the extension was installed
+- Content scripts only inject on pages loaded AFTER extension installation
+- Solution: Always refresh pages after loading/reloading the extension
+
+### "Could not establish connection" Error?
+
+**This is normal!** The error occurs when:
+- The popup tries to send messages but the content script isn't ready yet
+- The background script tries to message a popup that's closed
+- These errors are safely handled and won't affect functionality
+
+**To verify it's working:**
+- Check if buttons still expand when you hover
+- Check console for success messages (not errors in background)
+- The extension works even if you see these errors
+
+### Extension Shows Errors?
+
+1. **Check manifest.json** - Must be valid JSON
+2. **Check icons exist** - All three sizes must be present
+3. **Reload extension** - Click reload button in chrome://extensions/
+4. **Check console** - Look for JavaScript errors in red
 
 ## Current Features Implemented
 
