@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v2';
+const STEADY_ASSIST_BUILD = 'v3';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -267,6 +267,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function applyAssistance(element, reason) {
     if (!visualFeedback) return;
+    if (element.hasAttribute('data-steady-assist')) return;
 
     // Mark element as assisted
     element.setAttribute('data-steady-assist', reason);
@@ -305,19 +306,54 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     const styles = window.getComputedStyle(element);
     const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
 
-    if (!element.hasAttribute('data-original-padding')) {
+    let basePadding = null;
+    const originalPadding = element.getAttribute('data-original-padding');
+    if (originalPadding === null) {
       element.setAttribute('data-original-padding', styles.padding);
+      basePadding = {
+        top: parseFloat(styles.paddingTop) || 0,
+        right: parseFloat(styles.paddingRight) || 0,
+        bottom: parseFloat(styles.paddingBottom) || 0,
+        left: parseFloat(styles.paddingLeft) || 0,
+      };
+    } else {
+      const parts = originalPadding.split(' ');
+      const vals = parts.map(p => parseFloat(p) || 0);
+      if (vals.length === 1) {
+        basePadding = {
+          top: vals[0],
+          right: vals[0],
+          bottom: vals[0],
+          left: vals[0],
+        };
+      } else if (vals.length === 2) {
+        basePadding = {
+          top: vals[0],
+          right: vals[1],
+          bottom: vals[0],
+          left: vals[1],
+        };
+      } else if (vals.length === 3) {
+        basePadding = {
+          top: vals[0],
+          right: vals[1],
+          bottom: vals[2],
+          left: vals[1],
+        };
+      } else {
+        basePadding = {
+          top: vals[0] || 0,
+          right: vals[1] || 0,
+          bottom: vals[2] || 0,
+          left: vals[3] || 0,
+        };
+      }
     }
 
-    const top = parseFloat(styles.paddingTop) || 0;
-    const right = parseFloat(styles.paddingRight) || 0;
-    const bottom = parseFloat(styles.paddingBottom) || 0;
-    const left = parseFloat(styles.paddingLeft) || 0;
-
-    element.style.paddingTop = `${top + additionalPadding}px`;
-    element.style.paddingRight = `${right + additionalPadding}px`;
-    element.style.paddingBottom = `${bottom + additionalPadding}px`;
-    element.style.paddingLeft = `${left + additionalPadding}px`;
+    element.style.paddingTop = `${basePadding.top + additionalPadding}px`;
+    element.style.paddingRight = `${basePadding.right + additionalPadding}px`;
+    element.style.paddingBottom = `${basePadding.bottom + additionalPadding}px`;
+    element.style.paddingLeft = `${basePadding.left + additionalPadding}px`;
   }
 
   function attachExitListeners(element) {
