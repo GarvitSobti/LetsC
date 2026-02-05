@@ -254,12 +254,22 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
   function expandClickArea(element) {
     // Increase padding to make element easier to click
-    const currentPadding =
-      parseInt(window.getComputedStyle(element).padding) || 0;
+    const styles = window.getComputedStyle(element);
     const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
 
-    element.style.padding = `${currentPadding + additionalPadding}px`;
-    element.setAttribute('data-original-padding', currentPadding);
+    if (!element.hasAttribute('data-original-padding')) {
+      element.setAttribute('data-original-padding', styles.padding);
+    }
+
+    const top = parseFloat(styles.paddingTop) || 0;
+    const right = parseFloat(styles.paddingRight) || 0;
+    const bottom = parseFloat(styles.paddingBottom) || 0;
+    const left = parseFloat(styles.paddingLeft) || 0;
+
+    element.style.paddingTop = `${top + additionalPadding}px`;
+    element.style.paddingRight = `${right + additionalPadding}px`;
+    element.style.paddingBottom = `${bottom + additionalPadding}px`;
+    element.style.paddingLeft = `${left + additionalPadding}px`;
   }
 
   function simplifySurroundings(element) {
@@ -295,8 +305,9 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     // Restore padding
     const originalPadding = element.getAttribute('data-original-padding');
-    if (originalPadding) {
-      element.style.padding = `${originalPadding}px`;
+    if (originalPadding !== null) {
+      element.style.padding = originalPadding;
+      element.removeAttribute('data-original-padding');
     }
 
     // Remove highlight
