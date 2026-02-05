@@ -24,6 +24,7 @@ console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
   let inactivityTimer = null;
   const inactivityRestoreDelay = 800;
   let lastMousePos = { x: 0, y: 0 };
+  let activeAssistedElement = null;
 
   // Stats
   let stats = {
@@ -131,6 +132,19 @@ console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
 
     lastMousePos = { x: e.clientX, y: e.clientY };
 
+    const hoveredNow = document.elementFromPoint(
+      lastMousePos.x,
+      lastMousePos.y
+    );
+    document.querySelectorAll('[data-steady-assist]').forEach(el => {
+      if (el !== hoveredNow && el !== activeAssistedElement) {
+        graduallyRestoreUI(el);
+      }
+    });
+    if (hoveredNow && hoveredNow.hasAttribute('data-steady-assist')) {
+      activeAssistedElement = hoveredNow;
+    }
+
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
     }
@@ -139,10 +153,11 @@ console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
         lastMousePos.x,
         lastMousePos.y
       );
-      if (hovered && hovered.hasAttribute('data-steady-assist')) {
-        return;
-      }
-      clearAllAssistance();
+      document.querySelectorAll('[data-steady-assist]').forEach(el => {
+        if (el !== hovered) {
+          graduallyRestoreUI(el);
+        }
+      });
     }, inactivityRestoreDelay);
 
     // Track cursor position
@@ -255,6 +270,7 @@ console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
 
     // Mark element as assisted
     element.setAttribute('data-steady-assist', reason);
+    activeAssistedElement = element;
 
     // Apply visual and functional assistance
     element.classList.add('steady-assist-active');
@@ -369,6 +385,9 @@ console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
     element.removeAttribute('data-steady-assist');
     element.removeAttribute('data-steady-exit-listener');
     element.classList.remove('steady-assist-active');
+    if (activeAssistedElement === element) {
+      activeAssistedElement = null;
+    }
   }
 
   function clearAssistanceForElement(element) {
