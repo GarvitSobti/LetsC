@@ -71,6 +71,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     document.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('click', handleClick, true);
     document.addEventListener('mouseover', handleMouseOver, { passive: true });
+    document.addEventListener('mouseout', handleMouseOut, { passive: true });
     console.log('✅ Steady Assist: Ready and listening!');
   }
 
@@ -78,6 +79,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('click', handleClick, true);
     document.removeEventListener('mouseover', handleMouseOver);
+    document.removeEventListener('mouseout', handleMouseOut);
     clearAllAssistance();
   }
 
@@ -149,6 +151,26 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     }
   }
 
+  function handleMouseOut(e) {
+    if (!isEnabled) return;
+
+    const element = e.target;
+
+    // Clear hesitation timer when mouse leaves
+    if (element === currentTarget) {
+      clearTimeout(hesitationTimer);
+      currentTarget = null;
+      isHesitating = false;
+
+      // Restore element if it was assisted
+      if (element.hasAttribute('data-steady-assist')) {
+        setTimeout(() => {
+          graduallyRestoreUI(element);
+        }, 500); // Small delay to check if click happened
+      }
+    }
+  }
+
   function handleClick(e) {
     if (!isEnabled) return;
 
@@ -157,10 +179,14 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     // Increase confidence when successful click
     stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
 
-    // Clear assistance after successful click
-    setTimeout(() => {
-      clearAssistanceForElement(e.target);
-    }, 500);
+    // Clear assistance immediately after successful click
+    const element = e.target;
+    if (element.hasAttribute('data-steady-assist')) {
+      clearTimeout(hesitationTimer);
+      setTimeout(() => {
+        clearAssistanceForElement(element);
+      }, 200); // Quick restore after click
+    }
 
     updateStats();
   }
@@ -218,12 +244,12 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     stats.assistCount++;
     updateStats();
 
-    // Auto-restore after interaction or timeout
+    // Auto-restore after timeout if no interaction
     setTimeout(() => {
       if (element.hasAttribute('data-steady-assist')) {
         graduallyRestoreUI(element);
       }
-    }, 5000);
+    }, 3000); // Reduced from 5s to 3s
   }
 
   function expandClickArea(element) {
