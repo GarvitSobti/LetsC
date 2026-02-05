@@ -273,12 +273,12 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       // Immediate assist on hover for shaky hands
       applyAssistance(hoveredButton, 'hover');
       activeAssistedElement = hoveredButton;
-      
+
       // Start/continue dwell clicking timer if enabled
       if (dwellClickEnabled) {
         startDwellClick(hoveredButton);
       }
-      
+
       // Show focus spotlight if enabled
       if (focusSpotlightEnabled) {
         showSpotlight(hoveredButton);
@@ -286,7 +286,10 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     } else {
       // For dwell clicking, allow tremor tolerance - don't immediately clear
       // Only clear if no dwell in progress, or if they moved far away
-      if (dwellTarget && !isNearElement(dwellTarget, lastMousePos.x, lastMousePos.y, 80)) {
+      if (
+        dwellTarget &&
+        !isNearElement(dwellTarget, lastMousePos.x, lastMousePos.y, 80)
+      ) {
         clearDwellClick();
       }
       removeSpotlight();
@@ -305,10 +308,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       clearTimeout(inactivityTimer);
     }
     inactivityTimer = setTimeout(() => {
-      const hovered = document.elementFromPoint(
-        lastMousePos.x,
-        lastMousePos.y
-      );
+      const hovered = document.elementFromPoint(lastMousePos.x, lastMousePos.y);
       document.querySelectorAll('[data-steady-assist]').forEach(el => {
         if (el !== hovered) {
           graduallyRestoreUI(el);
@@ -332,7 +332,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Analyze cursor behavior
     analyzeCursorBehavior();
-    
+
     // Handle auto-scroll at screen edges
     if (autoScrollEnabled) {
       handleAutoScroll(e.clientX, e.clientY);
@@ -441,7 +441,11 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Apply visual and functional assistance
     element.classList.add('steady-assist-active');
-    const activeMode = motorImpaired ? 'motor' : visualImpaired ? 'visual' : null;
+    const activeMode = motorImpaired
+      ? 'motor'
+      : visualImpaired
+        ? 'visual'
+        : null;
     if (activeMode === 'motor') {
       element.classList.add('steady-assist-motor');
       element.classList.add('steady-assist-lock');
@@ -657,7 +661,6 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     document.head.appendChild(style);
   }
 
-
   function isInteractiveElement(element) {
     return isButtonElement(element);
   }
@@ -820,7 +823,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   function startDwellClick(element) {
     if (!dwellClickEnabled || !element) return;
     if (element.hasAttribute('data-steady-tutorial')) return; // Don't dwell-click tutorial elements
-    
+
     // If same element, continue accumulating time
     if (dwellTarget === element && dwellStartTime) {
       const elapsed = Date.now() - dwellStartTime;
@@ -831,31 +834,31 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       dwellTarget = element;
       dwellAccumulatedTime = 0;
     }
-    
+
     dwellStartTime = Date.now();
-    
+
     // Create or update countdown indicator
     if (!dwellIndicator) {
       dwellIndicator = document.createElement('div');
       dwellIndicator.id = 'steady-dwell-indicator';
       document.body.appendChild(dwellIndicator);
-      
+
       // Update countdown every 100ms
       dwellUpdateInterval = setInterval(updateDwellIndicator, 100);
     }
-    
+
     updateDwellIndicator();
   }
 
   function updateDwellIndicator() {
     if (!dwellIndicator || !dwellTarget) return;
-    
+
     const rect = dwellTarget.getBoundingClientRect();
     const currentElapsed = dwellStartTime ? Date.now() - dwellStartTime : 0;
     const totalTime = dwellAccumulatedTime + currentElapsed;
     const remaining = Math.max(0, 2000 - totalTime);
     const secondsLeft = Math.ceil(remaining / 1000);
-    
+
     // Position above the button
     dwellIndicator.style.cssText = `
       position: fixed;
@@ -876,9 +879,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       pointer-events: none;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     `;
-    
+
     dwellIndicator.textContent = secondsLeft > 0 ? secondsLeft : '✓';
-    
+
     // Auto-click when time is up
     if (totalTime >= 2000) {
       if (dwellTarget && !dwellTarget.hasAttribute('data-steady-tutorial')) {
@@ -907,13 +910,13 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   // ===== FOCUS SPOTLIGHT =====
   function showSpotlight(element) {
     if (!focusSpotlightEnabled || !element) return;
-    
+
     removeSpotlight();
-    
+
     spotlightOverlay = document.createElement('div');
     spotlightOverlay.id = 'steady-spotlight-overlay';
     const rect = element.getBoundingClientRect();
-    
+
     spotlightOverlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -925,7 +928,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       pointer-events: none;
       transition: opacity 0.3s ease;
     `;
-    
+
     // Create hole for the focused element
     const clipPath = `polygon(
       0% 0%, 0% 100%, ${rect.left - 5}px 100%, 
@@ -937,7 +940,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       100% 100%, 100% 0%
     )`;
     spotlightOverlay.style.clipPath = clipPath;
-    
+
     document.body.appendChild(spotlightOverlay);
   }
 
@@ -959,14 +962,14 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   // ===== AUTO-SCROLL =====
   function handleAutoScroll(x, y) {
     if (!autoScrollEnabled) return;
-    
+
     const scrollSpeed = 5;
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
-    
+
     let scrollX = 0;
     let scrollY = 0;
-    
+
     // Near top edge
     if (y < EDGE_THRESHOLD) {
       scrollY = -scrollSpeed;
@@ -975,7 +978,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     else if (y > viewportHeight - EDGE_THRESHOLD) {
       scrollY = scrollSpeed;
     }
-    
+
     // Near left edge
     if (x < EDGE_THRESHOLD) {
       scrollX = -scrollSpeed;
@@ -984,7 +987,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     else if (x > viewportWidth - EDGE_THRESHOLD) {
       scrollX = scrollSpeed;
     }
-    
+
     if (scrollX !== 0 || scrollY !== 0) {
       window.scrollBy(scrollX, scrollY);
     }
