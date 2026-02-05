@@ -2,6 +2,8 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
+const STEADY_ASSIST_BUILD = `build-${Date.now()}`;
+console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
 
 (function () {
   'use strict';
@@ -21,6 +23,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   let isHesitating = false;
   let inactivityTimer = null;
   const inactivityRestoreDelay = 800;
+  let lastMousePos = { x: 0, y: 0 };
 
   // Stats
   let stats = {
@@ -44,6 +47,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
   function init() {
     console.log('🔧 Steady Assist: Initializing...');
+    console.log(`🧪 Steady Assist build tag (init): ${STEADY_ASSIST_BUILD}`);
 
     // Load settings
     chrome.storage.local.get(
@@ -66,6 +70,13 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     // Listen for messages from popup
     chrome.runtime.onMessage.addListener(handleMessage);
+
+    // Clean up on unload to avoid using invalidated extension context
+    window.addEventListener('beforeunload', () => {
+      clearTimeout(hesitationTimer);
+      clearTimeout(inactivityTimer);
+      clearAllAssistance();
+    });
   }
 
   function attachListeners() {
@@ -118,10 +129,19 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   function handleMouseMove(e) {
     if (!isEnabled) return;
 
+    lastMousePos = { x: e.clientX, y: e.clientY };
+
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
     }
     inactivityTimer = setTimeout(() => {
+      const hovered = document.elementFromPoint(
+        lastMousePos.x,
+        lastMousePos.y
+      );
+      if (hovered && hovered.hasAttribute('data-steady-assist')) {
+        return;
+      }
       clearAllAssistance();
     }, inactivityRestoreDelay);
 
@@ -327,7 +347,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
   function graduallyRestoreUI(element) {
     // Gradually restore original UI
-    element.style.transition = 'all 0.5s ease';
+    element.style.transition = 'all 0.8s ease';
 
     // Restore padding
     const originalPadding = element.getAttribute('data-original-padding');
@@ -437,12 +457,17 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function updateStats() {
-    // Send stats to popup
-    chrome.storage.local.set({ stats: stats });
-    chrome.runtime.sendMessage({
-      type: 'STATS_UPDATE',
-      stats: stats,
-    });
+    // Send stats to popup (guard against extension context invalidated)
+    if (!chrome?.runtime?.id) return;
+    try {
+      chrome.storage?.local?.set({ stats: stats });
+      chrome.runtime.sendMessage({
+        type: 'STATS_UPDATE',
+        stats: stats,
+      });
+    } catch (err) {
+      // Extension may be reloaded or navigated; ignore
+    }
   }
 
   console.log('Steady Assist: Ready');
