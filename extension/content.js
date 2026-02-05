@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v10';
+const STEADY_ASSIST_BUILD = 'v19';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -25,6 +25,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   const inactivityRestoreDelay = 800;
   let lastMousePos = { x: 0, y: 0 };
   let activeAssistedElement = null;
+  const magneticRadiusPx = 40;
+  const magneticSampleStep = 12;
   const originalMetrics = new WeakMap();
 
   // Stats
@@ -50,6 +52,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   function init() {
     console.log('🔧 Steady Assist: Initializing...');
     console.log(`🧪 Steady Assist build tag (init): ${STEADY_ASSIST_BUILD}`);
+    injectAssistStyles();
 
     // Load settings
     chrome.storage.local.get(
@@ -137,13 +140,53 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       lastMousePos.x,
       lastMousePos.y
     );
+    let hoveredButton = getButtonLikeElement(hoveredNow);
+
+    if (!hoveredButton) {
+      hoveredButton = findButtonNearCursor(
+        lastMousePos.x,
+        lastMousePos.y,
+        magneticRadiusPx,
+        magneticSampleStep
+      );
+    }
+
+    // Magnetic assist: only if we don't already have a direct hover target
+    if (!hoveredButton) {
+      const magneticButton = findClosestButtonWithinRadius(
+        lastMousePos.x,
+        lastMousePos.y,
+        magneticRadiusPx
+      );
+      if (magneticButton) {
+        hoveredButton = magneticButton;
+      }
+    }
+
+    if (!hoveredButton && activeAssistedElement) {
+      const dist = distanceToRect(
+        activeAssistedElement.getBoundingClientRect(),
+        lastMousePos.x,
+        lastMousePos.y
+      );
+      if (dist <= magneticRadiusPx) {
+        hoveredButton = activeAssistedElement;
+      }
+    }
+
+    if (hoveredButton) {
+      // Immediate assist on hover for shaky hands
+      applyAssistance(hoveredButton, 'hover');
+      activeAssistedElement = hoveredButton;
+    }
+
     document.querySelectorAll('[data-steady-assist]').forEach(el => {
-      if (el !== hoveredNow && el !== activeAssistedElement) {
+      if (el !== hoveredButton && el !== activeAssistedElement) {
         graduallyRestoreUI(el);
       }
     });
-    if (hoveredNow && hoveredNow.hasAttribute('data-steady-assist')) {
-      activeAssistedElement = hoveredNow;
+    if (hoveredButton && hoveredButton.hasAttribute('data-steady-assist')) {
+      activeAssistedElement = hoveredButton;
     }
 
     if (inactivityTimer) {
@@ -278,6 +321,12 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     // Apply visual and functional assistance
     element.classList.add('steady-assist-active');
 
+    // Lock font size so label doesn't change independently
+    const metrics = getOriginalMetrics(element);
+    if (metrics && metrics.fontSize) {
+      element.style.fontSize = metrics.fontSize;
+    }
+
     // Expand clickable area
     expandClickArea(element);
 
@@ -296,34 +345,34 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Auto-restore after timeout if no interaction
     setTimeout(() => {
-      if (element.hasAttribute('data-steady-assist')) {
+      const hoveredElement = document.elementFromPoint(
+        lastMousePos.x,
+        lastMousePos.y
+      );
+      const hoveredButton = getButtonLikeElement(hoveredElement);
+      const hovered =
+        element.matches(':hover') ||
+        hoveredButton === element ||
+        (hoveredButton && hoveredButton.contains(hoveredElement));
+      if (element.hasAttribute('data-steady-assist') && !hovered) {
         graduallyRestoreUI(element);
       }
     }, 1500); // Faster restore when idle
   }
 
   function expandClickArea(element) {
-    // Increase padding to make element easier to click
+    // Increase padding so label + icon stay together within the button
     const metrics = getOriginalMetrics(element);
-    const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
-    // Cap to 4x width/height => scale factor 4
-    const sizeScale = 4;
+    // Cap to 2x width/height => scale factor 2
+    const sizeScale = 2;
     const maxAdd =
       (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
-    const cappedPadding = Math.min(additionalPadding, maxAdd);
+    const additionalPadding = maxAdd;
 
-    element.style.paddingTop = `${metrics.top + cappedPadding}px`;
-    element.style.paddingRight = `${metrics.right + cappedPadding}px`;
-    element.style.paddingBottom = `${metrics.bottom + cappedPadding}px`;
-    element.style.paddingLeft = `${metrics.left + cappedPadding}px`;
-
-    // Scale the whole button so text grows with it
-    const scaleFactor = Math.min(
-      sizeScale,
-      1 + cappedPadding / Math.max(1, Math.min(metrics.width, metrics.height))
-    );
-    element.style.transformOrigin = 'center';
-    element.style.transform = `scale(${scaleFactor})`;
+    element.style.paddingTop = `${metrics.top + additionalPadding}px`;
+    element.style.paddingRight = `${metrics.right + additionalPadding}px`;
+    element.style.paddingBottom = `${metrics.bottom + additionalPadding}px`;
+    element.style.paddingLeft = `${metrics.left + additionalPadding}px`;
   }
 
   function attachExitListeners(element) {
@@ -375,14 +424,14 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     const metrics = originalMetrics.get(element);
     if (metrics) {
       element.style.padding = metrics.padding;
-      element.style.fontSize = metrics.fontSize;
       element.style.transform = metrics.transform;
       element.style.transformOrigin = metrics.transformOrigin;
+      element.style.fontSize = metrics.fontSize;
     } else {
       element.style.padding = '';
-      element.style.fontSize = '';
       element.style.transform = '';
       element.style.transformOrigin = '';
+      element.style.fontSize = '';
     }
 
     // Remove highlight
@@ -437,6 +486,21 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     }
     return metrics;
   }
+
+  function injectAssistStyles() {
+    if (document.getElementById('steady-assist-style')) return;
+    const style = document.createElement('style');
+    style.id = 'steady-assist-style';
+    style.textContent = `
+      .steady-assist-active * {
+        font-size: inherit !important;
+        line-height: inherit !important;
+        transform: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
 
   function isInteractiveElement(element) {
     return isButtonElement(element);
@@ -541,6 +605,45 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     return Math.sqrt(
       Math.pow(centerX2 - centerX1, 2) + Math.pow(centerY2 - centerY1, 2)
     );
+  }
+
+  function distanceToRect(rect, x, y) {
+    const dx = Math.max(rect.left - x, 0, x - rect.right);
+    const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function findButtonNearCursor(x, y, radius, step) {
+    for (let r = step; r <= radius; r += step) {
+      for (let dx = -r; dx <= r; dx += step) {
+        for (let dy = -r; dy <= r; dy += step) {
+          const el = document.elementFromPoint(x + dx, y + dy);
+          const button = getButtonLikeElement(el);
+          if (button) return button;
+        }
+      }
+    }
+    return null;
+  }
+
+  function findClosestButtonWithinRadius(x, y, radius) {
+    const candidates = document.querySelectorAll(
+      'button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"]'
+    );
+    let closest = null;
+    let bestDist = radius + 1;
+
+    candidates.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const dist = distanceToRect(rect, x, y);
+      if (dist <= radius && dist < bestDist) {
+        bestDist = dist;
+        closest = el;
+      }
+    });
+
+    return closest;
   }
 
   function updateStats() {
