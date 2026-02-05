@@ -50,54 +50,6 @@
           </div>
         </div>
 
-        <!-- Metrics Dashboard -->
-        <div class="metrics-section" id="metricsSection" style="display: none">
-          <div class="metrics-tabs">
-            <button class="metrics-tab active" data-tab="accuracy">Accuracy</button>
-            <button class="metrics-tab" data-tab="ratio">Assisted/Unassisted</button>
-          </div>
-
-          <!-- Accuracy Chart -->
-          <div class="metrics-container" id="accuracyTab">
-            <h3>Click Accuracy</h3>
-            <canvas id="accuracyChart"></canvas>
-            <div class="accuracy-stats">
-              <div class="stat-item">
-                <span class="stat-title">Success Rate</span>
-                <span class="stat-big" id="successRate">0%</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-title">Successful Clicks</span>
-                <span class="stat-big" id="successfulClicksValue">0</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-title">Missed Clicks</span>
-                <span class="stat-big" id="missedClicksValue">0</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Assisted/Unassisted Chart -->
-          <div class="metrics-container" id="ratioTab" style="display: none">
-            <h3>Assisted vs Unassisted Clicks</h3>
-            <canvas id="ratioChart"></canvas>
-            <div class="ratio-stats">
-              <div class="stat-item">
-                <span class="stat-title">Assisted Clicks</span>
-                <span class="stat-big" id="assistedClicksValue">0</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-title">Unassisted Clicks</span>
-                <span class="stat-big" id="unassistedClicksValue">0</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-title">Assistance Ratio</span>
-                <span class="stat-big" id="assistanceRatio">0%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Settings (collapsed by default) -->
         <details class="settings-section">
           <summary>Advanced Settings</summary>
@@ -135,7 +87,6 @@
       </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

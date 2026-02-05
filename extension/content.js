@@ -319,24 +319,43 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function simplifySurroundings(element) {
-    // Fade out nearby non-essential elements
+    // Smart button simplification: Hide nearby interactive elements to prevent mis-clicks
     const rect = element.getBoundingClientRect();
+    const SIMPLIFICATION_RADIUS = 120; // Hide buttons within 120px radius
+    
+    console.log('🧹 Simplifying surroundings for:', element.tagName);
+    
     const allElements = document.querySelectorAll('*');
+    let hiddenCount = 0;
 
     allElements.forEach(el => {
-      if (el === element || element.contains(el) || el.contains(element))
+      // Skip the assisted element itself and its children
+      if (el === element || element.contains(el) || el.contains(element)) {
         return;
+      }
 
       const elRect = el.getBoundingClientRect();
       const distance = calculateDistance(rect, elRect);
 
-      // Fade elements based on distance
-      if (distance < 200 && !isInteractiveElement(el)) {
-        const fadeAmount = 1 - (distance / 200) * 0.5; // Fade up to 50%
+      // Hide nearby interactive elements (buttons, links, inputs)
+      if (isInteractiveElement(el) && distance < SIMPLIFICATION_RADIUS) {
+        el.style.opacity = '0.15'; // Make them barely visible
+        el.style.pointerEvents = 'none'; // Prevent accidental clicks
+        el.setAttribute('data-steady-hidden', 'true');
+        hiddenCount++;
+        console.log('  Hidden nearby button:', el.tagName, 'distance:', distance.toFixed(0) + 'px');
+      } 
+      // Fade non-interactive elements that are very close
+      else if (!isInteractiveElement(el) && distance < SIMPLIFICATION_RADIUS * 0.8) {
+        const fadeAmount = 0.3; // Fade to 30%
         el.style.opacity = fadeAmount.toString();
         el.setAttribute('data-steady-faded', 'true');
       }
     });
+
+    if (hiddenCount > 0) {
+      console.log('✅ Simplified ' + hiddenCount + ' nearby buttons');
+    }
   }
 
   function addVisualHighlight(element) {
@@ -362,6 +381,13 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     document.querySelectorAll('[data-steady-faded]').forEach(el => {
       el.style.opacity = '';
       el.removeAttribute('data-steady-faded');
+    });
+
+    // Restore hidden interactive elements
+    document.querySelectorAll('[data-steady-hidden]').forEach(el => {
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+      el.removeAttribute('data-steady-hidden');
     });
 
     // Clean up
