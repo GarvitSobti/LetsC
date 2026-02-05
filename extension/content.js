@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v5';
+const STEADY_ASSIST_BUILD = 'v6';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -305,13 +305,25 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     // Increase padding to make element easier to click
     const metrics = getOriginalMetrics(element);
     const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
-    const maxAdd = Math.min(metrics.width, metrics.height) * 1.5;
+    // Cap to 2x area => scale factor sqrt(2)
+    const areaScale = Math.SQRT2;
+    const maxAdd = (Math.min(metrics.width, metrics.height) * (areaScale - 1)) / 2;
     const cappedPadding = Math.min(additionalPadding, maxAdd);
 
     element.style.paddingTop = `${metrics.top + cappedPadding}px`;
     element.style.paddingRight = `${metrics.right + cappedPadding}px`;
     element.style.paddingBottom = `${metrics.bottom + cappedPadding}px`;
     element.style.paddingLeft = `${metrics.left + cappedPadding}px`;
+
+    // Scale font size with area (sqrt factor) for readability
+    const currentFontSize = parseFloat(metrics.fontSize) || 0;
+    if (currentFontSize) {
+      const fontScale = Math.min(
+        areaScale,
+        1 + cappedPadding / Math.max(1, Math.min(metrics.width, metrics.height))
+      );
+      element.style.fontSize = `${currentFontSize * fontScale}px`;
+    }
   }
 
   function attachExitListeners(element) {
@@ -363,8 +375,10 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     const metrics = originalMetrics.get(element);
     if (metrics) {
       element.style.padding = metrics.padding;
+      element.style.fontSize = metrics.fontSize;
     } else {
       element.style.padding = '';
+      element.style.fontSize = '';
     }
 
     // Remove highlight
@@ -405,6 +419,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       const rect = element.getBoundingClientRect();
       metrics = {
         padding: styles.padding,
+        fontSize: styles.fontSize,
         top: parseFloat(styles.paddingTop) || 0,
         right: parseFloat(styles.paddingRight) || 0,
         bottom: parseFloat(styles.paddingBottom) || 0,
