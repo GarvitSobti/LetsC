@@ -149,8 +149,12 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     // Check if element is interactive
     if (isInteractiveElement(element)) {
+      // Only clear previous assistedElement if we're moving to a DIFFERENT element
+      if (currentTarget && currentTarget !== element) {
+        assistedElement = null; // Clear any previous assisted element
+      }
+      
       currentTarget = element;
-      assistedElement = null; // Clear any previous assisted element
       
       // Start hesitation timer
       clearTimeout(hesitationTimer);
@@ -185,6 +189,8 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     stats.clickCount++;
     
+    console.log('🖱️ CLICK detected. assistedElement:', assistedElement ? assistedElement.tagName : 'null', 'clickCount:', stats.clickCount);
+    
     // Find the actual interactive element that was clicked
     let clickedElement = e.target;
     while (clickedElement && !isInteractiveElement(clickedElement)) {
@@ -197,12 +203,12 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       if (clickedElement === assistedElement) {
         stats.successfulClicks++;
         stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
-        console.log('✅ SUCCESS - Clicked assisted element');
+        console.log('✅ SUCCESS - Clicked assisted element. successfulClicks:', stats.successfulClicks);
       } else {
         // Clicked a different element
         stats.missedClicks++;
         stats.confidenceLevel = Math.max(0, stats.confidenceLevel - 3);
-        console.log('❌ MISS - Clicked different element:', {
+        console.log('❌ MISS - Clicked different element. missedClicks:', stats.missedClicks, {
           assisted: assistedElement.tagName,
           clicked: clickedElement ? clickedElement.tagName : 'none'
         });
@@ -216,6 +222,8 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
         }, 100);
       }
       assistedElement = null; // Clear for next interaction
+    } else {
+      console.log('ℹ️ Click without prior assistance');
     }
 
     updateStats();
@@ -266,6 +274,8 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   function applyAssistance(element, reason) {
     if (!visualFeedback) return;
     if (!element) return;
+
+    console.log('🎯 ASSISTANCE APPLIED - element:', element.tagName, 'reason:', reason);
 
     // Set this as the assisted element for click tracking
     assistedElement = element;
