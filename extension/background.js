@@ -1,7 +1,7 @@
 // Background service worker
 // Handles cross-tab communication and data persistence
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(details => {
   console.log('Steady Assist installed');
 
   // Set default settings
@@ -20,6 +20,14 @@ chrome.runtime.onInstalled.addListener(() => {
     },
     userPatterns: {},
   });
+
+  // Trigger tutorial on first install
+  if (details.reason === 'install') {
+    chrome.storage.local.set({
+      tutorialCompleted: false,
+      showTutorialOnNextPage: true,
+    });
+  }
 });
 
 // Listen for messages from content scripts
@@ -36,4 +44,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
   return true; // Keep message channel open
+  // Forward demo control messages to all tabs so content scripts receive them
+  if (
+    request.type &&
+    request.type.startsWith &&
+    request.type.startsWith('DEMO')
+  ) {
+    chrome.tabs.query({}, function (tabs) {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, request, function () {
+            // ignore per-tab errors
+            if (chrome.runtime.lastError) {
+              // console.log('Forward to tab failed', chrome.runtime.lastError.message);
+            }
+          });
+        }
+      });
+    });
+  }
 });
