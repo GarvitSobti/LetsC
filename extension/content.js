@@ -150,28 +150,34 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function handleMouseOver(e) {
-    if (!isEnabled) return;
+    try {
+      if (!isEnabled) return;
 
-    const element = e.target;
-    console.log('🖱️ MOUSEOVER:', element.tagName, '| isInteractive:', isInteractiveElement(element), '| sensitivity:', sensitivity);
+      const element = e.target;
+      console.log('🖱️ MOUSEOVER:', element.tagName, '| isInteractive:', isInteractiveElement(element), '| sensitivity:', sensitivity);
 
-    // Check if element is interactive
-    if (isInteractiveElement(element)) {
-      // Only clear previous assistedElement if we're moving to a DIFFERENT element
-      if (currentTarget && currentTarget !== element) {
-        assistedElement = null; // Clear any previous assisted element
+      // Check if element is interactive
+      if (isInteractiveElement(element)) {
+        // Only clear previous assistedElement if we're moving to a DIFFERENT element
+        if (currentTarget && currentTarget !== element) {
+          assistedElement = null; // Clear any previous assisted element
+        }
+        
+        currentTarget = element;
+        
+        // Start hesitation timer
+        clearTimeout(hesitationTimer);
+        const hesitationTime = config.hesitationThreshold / sensitivity;
+        console.log('⏱️ HESITATION TIMER SET for', hesitationTime + 'ms on', element.tagName);
+        
+        hesitationTimer = setTimeout(() => {
+          detectHesitation(element);
+        }, hesitationTime);
       }
-      
-      currentTarget = element;
-      
-      // Start hesitation timer
-      clearTimeout(hesitationTimer);
-      const hesitationTime = config.hesitationThreshold / sensitivity;
-      console.log('⏱️ HESITATION TIMER SET for', hesitationTime + 'ms on', element.tagName);
-      
-      hesitationTimer = setTimeout(() => {
-        detectHesitation(element);
-      }, hesitationTime);
+    } catch (error) {
+      if (!error.message.includes('context invalidated')) {
+        console.error('Error in handleMouseOver:', error);
+      }
     }
   }
 
@@ -196,48 +202,54 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function handleClick(e) {
-    if (!isEnabled) return;
+    try {
+      if (!isEnabled) return;
 
-    stats.clickCount++;
-    
-    console.log('🖱️ CLICK detected. assistedElement:', assistedElement ? assistedElement.tagName : 'null', 'clickCount:', stats.clickCount);
-    
-    // Find the actual interactive element that was clicked
-    let clickedElement = e.target;
-    while (clickedElement && !isInteractiveElement(clickedElement)) {
-      clickedElement = clickedElement.parentElement;
-    }
+      stats.clickCount++;
+      
+      console.log('🖱️ CLICK detected. assistedElement:', assistedElement ? assistedElement.tagName : 'null', 'clickCount:', stats.clickCount);
+      
+      // Find the actual interactive element that was clicked
+      let clickedElement = e.target;
+      while (clickedElement && !isInteractiveElement(clickedElement)) {
+        clickedElement = clickedElement.parentElement;
+      }
 
-    // Only count stats if assistance was active
-    if (assistedElement) {
-      // Check if they clicked the exact assisted element
-      if (clickedElement === assistedElement) {
-        stats.successfulClicks++;
-        stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
-        console.log('✅ SUCCESS - Clicked assisted element. successfulClicks:', stats.successfulClicks);
+      // Only count stats if assistance was active
+      if (assistedElement) {
+        // Check if they clicked the exact assisted element
+        if (clickedElement === assistedElement) {
+          stats.successfulClicks++;
+          stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
+          console.log('✅ SUCCESS - Clicked assisted element. successfulClicks:', stats.successfulClicks);
+        } else {
+          // Clicked a different element
+          stats.missedClicks++;
+          stats.confidenceLevel = Math.max(0, stats.confidenceLevel - 3);
+          console.log('❌ MISS - Clicked different element. missedClicks:', stats.missedClicks, {
+            assisted: assistedElement.tagName,
+            clicked: clickedElement ? clickedElement.tagName : 'none'
+          });
+        }
+
+        // Clear assistance immediately
+        if (assistedElement && assistedElement.hasAttribute('data-steady-assist')) {
+          clearTimeout(hesitationTimer);
+          setTimeout(() => {
+            clearAssistanceForElement(assistedElement);
+          }, 100);
+        }
+        assistedElement = null; // Clear for next interaction
       } else {
-        // Clicked a different element
-        stats.missedClicks++;
-        stats.confidenceLevel = Math.max(0, stats.confidenceLevel - 3);
-        console.log('❌ MISS - Clicked different element. missedClicks:', stats.missedClicks, {
-          assisted: assistedElement.tagName,
-          clicked: clickedElement ? clickedElement.tagName : 'none'
-        });
+        console.log('ℹ️ Click without prior assistance');
       }
 
-      // Clear assistance immediately
-      if (assistedElement && assistedElement.hasAttribute('data-steady-assist')) {
-        clearTimeout(hesitationTimer);
-        setTimeout(() => {
-          clearAssistanceForElement(assistedElement);
-        }, 100);
+      updateStats();
+    } catch (error) {
+      if (!error.message.includes('context invalidated')) {
+        console.error('Error in handleClick:', error);
       }
-      assistedElement = null; // Clear for next interaction
-    } else {
-      console.log('ℹ️ Click without prior assistance');
     }
-
-    updateStats();
   }
 
   function analyzeCursorBehavior() {
@@ -284,51 +296,57 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function applyAssistance(element, reason) {
-    if (!visualFeedback) {
-      console.log('❌ VISUAL FEEDBACK DISABLED - Not applying assistance');
-      return;
-    }
-    if (!element) {
-      console.log('❌ NO ELEMENT - Cannot apply assistance');
-      return;
-    }
-
-    // Clear any PREVIOUS assisted element first (prevent congestion)
-    if (assistedElement && assistedElement !== element) {
-      clearAssistanceForElement(assistedElement);
-    }
-
-    console.log('🎯 ASSISTANCE APPLIED - element:', element.tagName, 'reason:', reason);
-
-    // Set this as the assisted element for click tracking
-    assistedElement = element;
-
-    // Mark element as assisted
-    element.setAttribute('data-steady-assist', reason);
-
-    // Apply visual and functional assistance
-    element.classList.add('steady-assist-active');
-
-    // Expand clickable area
-    expandClickArea(element);
-
-    // Simplify surrounding area
-    simplifySurroundings(element);
-
-    // Add visual highlight
-    if (visualFeedback) {
-      addVisualHighlight(element);
-    }
-
-    stats.assistCount++;
-    updateStats();
-
-    // Auto-restore after timeout if no interaction
-    setTimeout(() => {
-      if (element.hasAttribute('data-steady-assist')) {
-        graduallyRestoreUI(element);
+    try {
+      if (!visualFeedback) {
+        console.log('❌ VISUAL FEEDBACK DISABLED - Not applying assistance');
+        return;
       }
-    }, 3000); // Reduced from 5s to 3s
+      if (!element) {
+        console.log('❌ NO ELEMENT - Cannot apply assistance');
+        return;
+      }
+
+      // Clear any PREVIOUS assisted element first (prevent congestion)
+      if (assistedElement && assistedElement !== element) {
+        clearAssistanceForElement(assistedElement);
+      }
+
+      console.log('🎯 ASSISTANCE APPLIED - element:', element.tagName, 'reason:', reason);
+
+      // Set this as the assisted element for click tracking
+      assistedElement = element;
+
+      // Mark element as assisted
+      element.setAttribute('data-steady-assist', reason);
+
+      // Apply visual and functional assistance
+      element.classList.add('steady-assist-active');
+
+      // Expand clickable area
+      expandClickArea(element);
+
+      // Simplify surrounding area
+      simplifySurroundings(element);
+
+      // Add visual highlight
+      if (visualFeedback) {
+        addVisualHighlight(element);
+      }
+
+      stats.assistCount++;
+      updateStats();
+
+      // Auto-restore after timeout if no interaction
+      setTimeout(() => {
+        if (element.hasAttribute('data-steady-assist')) {
+          graduallyRestoreUI(element);
+        }
+      }, 3000); // Reduced from 5s to 3s
+    } catch (error) {
+      if (!error.message.includes('context invalidated')) {
+        console.error('Error in applyAssistance:', error);
+      }
+    }
   }
 
   function expandClickArea(element) {
