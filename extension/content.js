@@ -19,6 +19,8 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   let currentTarget = null;
   let hesitationTimer = null;
   let isHesitating = false;
+  let inactivityTimer = null;
+  const inactivityRestoreDelay = 800;
 
   // Stats
   let stats = {
@@ -115,6 +117,13 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
   function handleMouseMove(e) {
     if (!isEnabled) return;
+
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+    inactivityTimer = setTimeout(() => {
+      clearAllAssistance();
+    }, inactivityRestoreDelay);
 
     // Track cursor position
     const position = {
@@ -241,6 +250,9 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       addVisualHighlight(element);
     }
 
+    // Ensure we restore when the cursor leaves this element
+    attachExitListeners(element);
+
     stats.assistCount++;
     updateStats();
 
@@ -249,7 +261,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       if (element.hasAttribute('data-steady-assist')) {
         graduallyRestoreUI(element);
       }
-    }, 3000); // Reduced from 5s to 3s
+    }, 1500); // Faster restore when idle
   }
 
   function expandClickArea(element) {
@@ -270,6 +282,20 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     element.style.paddingRight = `${right + additionalPadding}px`;
     element.style.paddingBottom = `${bottom + additionalPadding}px`;
     element.style.paddingLeft = `${left + additionalPadding}px`;
+  }
+
+  function attachExitListeners(element) {
+    if (element.hasAttribute('data-steady-exit-listener')) return;
+
+    const onLeave = () => {
+      if (element.hasAttribute('data-steady-assist')) {
+        graduallyRestoreUI(element);
+      }
+    };
+
+    element.addEventListener('mouseleave', onLeave, { passive: true });
+    element.addEventListener('pointerleave', onLeave, { passive: true });
+    element.setAttribute('data-steady-exit-listener', 'true');
   }
 
   function simplifySurroundings(element) {
@@ -321,6 +347,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     // Clean up
     element.removeAttribute('data-steady-assist');
+    element.removeAttribute('data-steady-exit-listener');
     element.classList.remove('steady-assist-active');
   }
 
