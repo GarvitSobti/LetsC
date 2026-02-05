@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v7';
+const STEADY_ASSIST_BUILD = 'v8';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -279,8 +279,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     // Expand clickable area
     expandClickArea(element);
 
-    // Simplify surrounding area
-    simplifySurroundings(element);
+    // Simplify surrounding area (disabled per request)
 
     // Add visual highlight
     if (visualFeedback) {
@@ -305,8 +304,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     // Increase padding to make element easier to click
     const metrics = getOriginalMetrics(element);
     const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
-    // Cap to 2x width/height => scale factor 2
-    const sizeScale = 2;
+    // Cap to 4x width/height => scale factor 4
+    const sizeScale = 4;
     const maxAdd =
       (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
     const cappedPadding = Math.min(additionalPadding, maxAdd);
