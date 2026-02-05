@@ -13,40 +13,44 @@
     {
       id: 'welcome',
       title: 'Welcome to Steady Assist! 👋',
-      message: 'We make clicking buttons easier for you.\n\nWould you like to see how it works?\n\nThis will only take 1 minute.',
+      message:
+        'We make clicking buttons easier for you.\n\nWould you like to see how it works?\n\nThis will only take 1 minute.',
       buttons: [
         { text: 'Not Now', action: 'skip' },
-        { text: 'Yes, Show Me', action: 'next', primary: true }
-      ]
+        { text: 'Yes, Show Me', action: 'next', primary: true },
+      ],
     },
     {
       id: 'hover-demo',
       title: 'Step 1 of 3',
-      message: 'When you move your mouse slowly over a button,\nwe help you by making it bigger.\n\nTry it now: Move your mouse over this button.',
+      message:
+        'When you move your mouse slowly over a button,\nwe help you by making it bigger.\n\nTry it now: Move your mouse over this button.',
       showTestButton: true,
       buttons: [
         { text: 'Skip', action: 'skip' },
-        { text: 'Next', action: 'next', primary: true, disabled: true }
-      ]
+        { text: 'Next', action: 'next', primary: true, disabled: true },
+      ],
     },
     {
       id: 'feedback',
       title: 'Step 2 of 3',
-      message: 'Great job! 🎉\n\nDid you see the button get bigger?\n\nThat\'s Steady Assist helping you click more easily.',
+      message:
+        "Great job! 🎉\n\nDid you see the button get bigger?\n\nThat's Steady Assist helping you click more easily.",
       buttons: [
         { text: 'Back', action: 'back' },
-        { text: 'Next', action: 'next', primary: true }
-      ]
+        { text: 'Next', action: 'next', primary: true },
+      ],
     },
     {
       id: 'settings',
       title: 'Step 3 of 3',
-      message: 'You\'re all set! ✓\n\nSteady Assist is now working.\n\nTo turn it on or off, click the extension icon\nin your browser toolbar.',
+      message:
+        "You're all set! ✓\n\nSteady Assist is now working.\n\nTo turn it on or off, click the extension icon\nin your browser toolbar.",
       buttons: [
         { text: 'Back', action: 'back' },
-        { text: 'Done', action: 'finish', primary: true }
-      ]
-    }
+        { text: 'Done', action: 'finish', primary: true },
+      ],
+    },
   ];
 
   function createOverlay() {
@@ -77,7 +81,7 @@
 
   function showStep(stepIndex) {
     console.log('📚 Showing step', stepIndex + 1);
-    
+
     if (stepIndex < 0 || stepIndex >= steps.length) {
       console.log('📚 Invalid step index');
       return;
@@ -148,7 +152,7 @@
           testButtonHovered = true;
           testBtn.textContent = '✓ Great!';
           testBtn.style.background = '#10b981';
-          
+
           // Enable Next button
           const nextBtn = card.querySelector('.btn-next');
           if (nextBtn) {
@@ -189,9 +193,11 @@
         font-weight: 500;
         cursor: ${btnConfig.disabled ? 'not-allowed' : 'pointer'};
         transition: all 0.2s;
-        ${btnConfig.primary 
-          ? 'background: #3b82f6; color: white;' 
-          : 'background: #e5e7eb; color: #374151;'}
+        ${
+          btnConfig.primary
+            ? 'background: #3b82f6; color: white;'
+            : 'background: #e5e7eb; color: #374151;'
+        }
         ${btnConfig.disabled ? 'opacity: 0.5;' : 'opacity: 1;'}
       `;
 
@@ -269,22 +275,24 @@
   });
 
   // Auto-start on first install - shows on current page
-  chrome.storage.local.get(['tutorialCompleted', 'showTutorialOnNextPage'], (result) => {
-    console.log('📚 Tutorial check:', result);
-    if (!result.tutorialCompleted && result.showTutorialOnNextPage) {
-      console.log('📚 Starting tutorial in 1 second...');
-      setTimeout(() => {
-        startTutorial();
-        chrome.storage.local.set({ showTutorialOnNextPage: false });
-      }, 1000);
-    } else {
-      console.log('📚 Skipping tutorial');
+  chrome.storage.local.get(
+    ['tutorialCompleted', 'showTutorialOnNextPage'],
+    result => {
+      console.log('📚 Tutorial check:', result);
+      if (!result.tutorialCompleted && result.showTutorialOnNextPage) {
+        console.log('📚 Starting tutorial in 1 second...');
+        setTimeout(() => {
+          startTutorial();
+          chrome.storage.local.set({ showTutorialOnNextPage: false });
+        }, 1000);
+      } else {
+        console.log('📚 Skipping tutorial');
+      }
     }
-  });
+  );
 
   // Debug helper
   window.__STEADY_TUTORIAL__ = { start: startTutorial, close: closeTutorial };
 
   console.log('✅ Tutorial: Ready');
-
 })();
