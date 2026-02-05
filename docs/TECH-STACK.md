@@ -37,18 +37,21 @@
 ### Browser Extension (Chrome/Edge/Firefox)
 
 **Core Technology:**
+
 - **Manifest V3** (latest Chrome extension standard)
 - **React 18** (UI components for popup and settings)
 - **TypeScript** (type safety for complex logic)
 - **Tailwind CSS** (rapid UI development, built-in accessibility)
 
 **Why This Stack:**
+
 - React: Component reusability, state management
 - TypeScript: Catch errors early, better IDE support
 - Tailwind: Rapid styling with accessibility utilities
 - Manifest V3: Future-proof, better security
 
 **Extension Structure:**
+
 ```
 extension/
 ├── manifest.json
@@ -68,6 +71,7 @@ extension/
 ```
 
 **Key Libraries:**
+
 ```json
 {
   "dependencies": {
@@ -83,12 +87,14 @@ extension/
 ### Alternative: Web App (If Extension Too Complex)
 
 **Tech Stack:**
+
 - **Next.js 14** (React framework with server components)
 - **TypeScript**
 - **Tailwind CSS**
 - **shadcn/ui** (accessible components out of the box)
 
 **Why Next.js:**
+
 - Server-side rendering for performance
 - API routes (no separate backend needed)
 - Built-in optimization
@@ -103,6 +109,7 @@ extension/
 **Deployment:** Vercel (free tier, zero config)
 
 **Structure:**
+
 ```
 pages/api/
 ├── analyze.ts           # Page analysis endpoint
@@ -112,12 +119,14 @@ pages/api/
 ```
 
 **Pros:**
+
 - Same repo as frontend
 - Zero deployment config
 - Free hosting on Vercel
 - TypeScript throughout
 
 **Cons:**
+
 - Serverless cold starts (1-2s delay)
 - Limited to 10s execution on free tier
 
@@ -127,12 +136,14 @@ pages/api/
 **Deployment:** Railway (free tier) or Render
 
 **Why FastAPI:**
+
 - Python ecosystem for AI/ML
 - Fast async processing
 - Auto-generated API docs
 - Easy integration with ML models
 
 **Structure:**
+
 ```python
 backend/
 ├── main.py                    # FastAPI app
@@ -148,11 +159,13 @@ backend/
 ```
 
 **Pros:**
+
 - Better for heavy AI processing
 - Can use custom ML models
 - More control over resources
 
 **Cons:**
+
 - Separate repo/deployment
 - Team needs Python knowledge
 - Free tier has limits
@@ -160,6 +173,7 @@ backend/
 ### Recommended Approach
 
 **Start with Next.js API Routes**, switch to FastAPI only if:
+
 - AI processing takes >8s
 - Need custom ML model training
 - Team has strong Python skills
@@ -197,6 +211,7 @@ backend/
    - Speed: Real-time streaming
 
 **Why OpenAI:**
+
 - Production-ready APIs
 - No model deployment needed
 - Fast response times
@@ -207,25 +222,30 @@ backend/
 ### Browser Native APIs (FREE)
 
 1. **Web Speech API**
+
    ```javascript
    // Text-to-Speech (built into browser)
    const utterance = new SpeechSynthesisUtterance(text);
    speechSynthesis.speak(utterance);
-   
+
    // Speech-to-Text
    const recognition = new webkitSpeechRecognition();
    recognition.start();
    ```
+
    - Pros: Free, fast, no API calls
    - Cons: Limited voices, browser-dependent
 
 2. **Contrast Ratio Calculation** (Pure JS)
    ```javascript
    // Calculate WCAG contrast ratio
-   function getContrastRatio(fg, bg) { /* ... */ }
+   function getContrastRatio(fg, bg) {
+     /* ... */
+   }
    ```
 
 **Recommended Mix:**
+
 - Use **Browser APIs** for TTS/STT (free, instant)
 - Use **OpenAI** for complex analysis (vision, simplification)
 - Cache results to minimize API calls
@@ -237,6 +257,7 @@ backend/
 ### Option 1: Supabase (RECOMMENDED)
 
 **Why Supabase:**
+
 - PostgreSQL (reliable, powerful)
 - Real-time subscriptions
 - Built-in auth
@@ -244,6 +265,7 @@ backend/
 - Easy Vercel integration
 
 **Schema:**
+
 ```sql
 -- User preferences
 CREATE TABLE user_preferences (
@@ -272,17 +294,20 @@ CREATE TABLE page_scores (
 ### Option 2: MongoDB Atlas (Alternative)
 
 **Why MongoDB:**
+
 - Flexible schema (good for evolving preferences)
 - Free tier (512MB)
 - Easy JSON storage
 
 **When to Use:**
+
 - Team familiar with NoSQL
 - Preference structure will change frequently
 
 ### Option 3: LocalStorage (MVP Only)
 
 **For Hackathon MVP:**
+
 - Store preferences in browser localStorage
 - No backend needed initially
 - Migrate to Supabase later
@@ -299,6 +324,7 @@ CREATE TABLE page_scores (
 ### Extension Deployment
 
 **Development:**
+
 ```bash
 # Build extension
 npm run build
@@ -308,10 +334,12 @@ npm run build
 ```
 
 **Hackathon Demo:**
+
 - Load unpacked extension (instant)
 - No need for Chrome Web Store (takes days to approve)
 
 **Post-Hackathon:**
+
 - Submit to Chrome Web Store
 - Firefox Add-ons
 - Edge Add-ons
@@ -321,6 +349,7 @@ npm run build
 #### Option 1: Vercel (Next.js) - EASIEST
 
 **Setup:**
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -333,6 +362,7 @@ vercel --prod
 ```
 
 **Environment Variables:**
+
 ```bash
 # .env.local
 OPENAI_API_KEY=sk-...
@@ -341,18 +371,21 @@ SUPABASE_KEY=...
 ```
 
 **Pros:**
+
 - Zero config deployment
 - Free SSL
 - Global CDN
 - Preview deployments for PRs
 
 **Limits:**
+
 - 10s function timeout (free tier)
 - 100GB bandwidth/month
 
 #### Option 2: Railway - FOR HEAVY AI
 
 **Setup:**
+
 ```bash
 # Install Railway CLI
 npm i -g @railway/cli
@@ -365,16 +398,19 @@ railway up
 ```
 
 **Pros:**
+
 - Longer timeouts (no limit)
 - Better for AI processing
 - $5 free credit monthly
 
 **Cons:**
+
 - Slightly more config than Vercel
 
 #### Option 3: Render (Alternative)
 
 **Setup:**
+
 - Connect GitHub repo
 - Auto-deploy on push
 - Free tier available
@@ -395,7 +431,7 @@ railway up
    - Connect extension to deployed API
    - Add Supabase if time permits
 
-4. **Demo Day:** 
+4. **Demo Day:**
    - Load unpacked extension on presentation laptop
    - Backend already deployed and stable
 
@@ -456,6 +492,7 @@ Database: MongoDB Atlas
 ## Cost Estimate (Hackathon)
 
 **Free Tier Coverage:**
+
 - Vercel: Free (100GB bandwidth)
 - Supabase: Free (500MB DB)
 - OpenAI: ~$5 for hackathon testing
@@ -468,14 +505,14 @@ Database: MongoDB Atlas
 
 ## Decision Matrix
 
-| Aspect | Next.js + Vercel | FastAPI + Railway |
-|--------|------------------|-------------------|
-| Setup Speed | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| AI Integration | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Deployment | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| Team Learning Curve | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| Performance | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Cost (Free Tier) | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Aspect              | Next.js + Vercel | FastAPI + Railway |
+| ------------------- | ---------------- | ----------------- |
+| Setup Speed         | ⭐⭐⭐⭐⭐       | ⭐⭐⭐            |
+| AI Integration      | ⭐⭐⭐⭐         | ⭐⭐⭐⭐⭐        |
+| Deployment          | ⭐⭐⭐⭐⭐       | ⭐⭐⭐⭐          |
+| Team Learning Curve | ⭐⭐⭐⭐         | ⭐⭐⭐            |
+| Performance         | ⭐⭐⭐⭐         | ⭐⭐⭐⭐⭐        |
+| Cost (Free Tier)    | ⭐⭐⭐⭐⭐       | ⭐⭐⭐⭐          |
 
 **Recommendation: Start with Next.js + Vercel**
 
@@ -484,21 +521,25 @@ Database: MongoDB Atlas
 ## Implementation Priority
 
 ### Phase 1: MVP (Days 1-2)
+
 - Chrome extension shell
 - Basic DOM manipulation (contrast, text size)
 - Localhost API
 
 ### Phase 2: AI Integration (Days 3-4)
+
 - OpenAI GPT-4 Vision for page analysis
 - Text simplification
 - Deploy to Vercel
 
 ### Phase 3: Polish (Day 5)
+
 - TTS/STT integration
 - User preferences (LocalStorage)
 - UI refinements
 
 ### Phase 4: Demo Prep (Day 6)
+
 - Test on multiple websites
 - Prepare presentation
 - Backup plans for live demo

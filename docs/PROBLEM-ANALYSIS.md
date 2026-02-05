@@ -34,12 +34,14 @@
 ## Critical Requirements
 
 ### Must-Have Features
+
 - **Functional End-to-End System** (not just mockup/concept)
 - **Multimodal Interaction** (text, speech, vision, UI adaptation)
 - **Executable, Evaluable, Demonstrable Live**
 - **AI Integration** (must justify its use)
 
 ### Deliverables Expected
+
 1. Working prototype/application
 2. Live demonstration capability
 3. Clear problem definition
@@ -49,7 +51,9 @@
 ## Judging Criteria Breakdown (100 points total)
 
 ### Impact (25 points)
+
 **What to Focus On:**
+
 - Address a SPECIFIC accessibility barrier (visual, auditory, motor, cognitive)
 - Directly solve a one-size-fits-all failure
 - Measurably reduce user burden (cognitive load, error rate, time-to-completion)
@@ -58,12 +62,14 @@
 - Reduce reliance on static configurations
 
 **Scoring Strategy:**
+
 - Target 9-10 points: Clear accessibility barrier + strong user burden reduction + broad applicability
 - Demonstrate with metrics: "Reduces task completion time by X%" or "Eliminates Y manual steps"
 
 ### Real-time Performance & Latency (25 points)
 
 **What to Focus On:**
+
 - System must respond quickly to multimodal inputs (speech, text, vision)
 - Smooth interaction without breaking usability
 - Justify latency trade-offs (explain why accuracy > speed if needed)
@@ -72,12 +78,14 @@
 - Handle concurrent users without failure
 
 **Scoring Strategy:**
+
 - Target 9-10 points: Responsive multimodal interaction + low latency + stable under continuous use
 - Optimize for: < 200ms UI response, < 1s for AI processing, graceful loading states
 
 ### Design (25 points)
 
 **What to Focus On:**
+
 - Fully functional end-to-end pipeline (not disconnected components)
 - All models, backend, and UI integrated
 - Adaptive interface that responds dynamically to user needs
@@ -87,12 +95,14 @@
 - Technically sound implementation
 
 **Scoring Strategy:**
+
 - Target 9-10 points: Complete pipeline + well-integrated components + adaptive behavior + reliable demo
 - Avoid: Static prototypes, disconnected parts, fragile demos
 
 ### Innovation & Creativity (25 points)
 
 **What to Focus On:**
+
 - Go beyond standard accessibility features (screen readers, captions)
 - Use AI creatively to solve accessibility problems
 - Clear "wow factor" in approach
@@ -101,6 +111,7 @@
 - Scale with more data, users, modalities
 
 **Scoring Strategy:**
+
 - Target 9-10 points: AI meaningfully enables personalization/adaptation + novel approach + clear extensibility
 - Examples: Real-time UI morphing based on user behavior, predictive accessibility adjustments, multimodal fusion
 
@@ -128,24 +139,28 @@ Based on judging criteria, focus on **ONE specific accessibility barrier** deepl
 ## Key Success Factors
 
 ### Technical Excellence
+
 - Working live demo (no crashes)
 - Fast response times
 - Smooth multimodal transitions
 - Clean, maintainable code
 
 ### Impact Demonstration
+
 - Show before/after comparison
 - Quantify improvement (time, errors, satisfaction)
 - Test with real accessibility scenarios
 - Document user journey
 
 ### AI Justification
+
 - Explain why AI is necessary (not just a buzzword)
 - Show what's impossible without AI
 - Demonstrate learning/adaptation over time
 - Clear improvement with usage
 
 ### Presentation Quality
+
 - Clear problem statement
 - Compelling live demo
 - Technical soundness
