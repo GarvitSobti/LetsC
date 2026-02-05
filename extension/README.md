@@ -1,6 +1,24 @@
 # Steady Assist - AI-Powered Accessibility Assistant
 
-> Making the web accessible for users with motor impairments through intelligent cursor assistance
+> An intelligent Chrome extension that makes the web accessible for users with motor impairments through real-time cursor assistance and adaptive UI
+
+## Overview
+
+Steady Assist helps elderly users and people with motor impairments (tremors, Parkinson's, limited dexterity) interact with websites more easily. The extension detects hesitation patterns, expands clickable areas, and provides visual guidance - making complex interfaces simpler and more accessible.
+
+**Target Use Case:** Elderly user refilling prescriptions on pharmacy websites without frustration.
+
+**Key Innovation:** AI-powered cursor trajectory prediction combined with adaptive UI assistance.
+
+## Features
+
+- **Smart Hesitation Detection** - Recognizes when users are struggling to click
+- **Automatic Button Expansion** - Increases click areas when needed
+- **Visual Guidance** - Highlights interactive elements with blue glow
+- **Surrounding Simplification** - Fades distractions to improve focus
+- **Confidence Tracking** - Learns and adapts to user patterns
+- **Privacy-First** - All processing happens locally in the browser
+- **Zero Setup** - Works automatically on all websites
 
 ## Installation
 
@@ -52,6 +70,7 @@ The extension icons are already included in the `icons/` folder. No additional s
 **Problem:** Buttons not expanding, no visual feedback
 
 **Solution:**
+
 1. Go to `chrome://extensions/`
 2. Find "Steady Assist" and click the **Reload** button (circular arrow)
 3. Go to your test website and **refresh the page** (F5)
@@ -59,6 +78,7 @@ The extension icons are already included in the `icons/` folder. No additional s
 5. Look for: `✅ Steady Assist: Ready and listening!`
 
 **If you don't see console messages:**
+
 - The page was loaded BEFORE the extension was installed
 - Content scripts only inject on pages loaded AFTER extension installation
 - Solution: Always refresh pages after loading/reloading the extension
@@ -66,11 +86,13 @@ The extension icons are already included in the `icons/` folder. No additional s
 ### "Could not establish connection" Error?
 
 **This is normal!** The error occurs when:
+
 - The popup tries to send messages but the content script isn't ready yet
 - The background script tries to message a popup that's closed
 - These errors are safely handled and won't affect functionality
 
 **To verify it's working:**
+
 - Check if buttons still expand when you hover
 - Check console for success messages (not errors in background)
 - The extension works even if you see these errors
@@ -117,31 +139,90 @@ This is STRONG AI justification because:
 - Improves over time with usage
 - Impossible with static rules
 
+## How It Works
+
+### User Experience
+
+1. User visits a website (e.g., pharmacy prescription refill page)
+2. Extension tracks mouse movement in real-time
+3. When hovering over a button for 2+ seconds, extension detects hesitation
+4. Button automatically expands, gets highlighted with blue glow
+5. Surrounding elements fade to reduce visual clutter
+6. User clicks the enlarged button easily
+7. UI restores to normal after successful interaction
+
+### Technical Flow
+
+**Content Script** ([content.js](content.js))
+- Runs on every webpage automatically
+- Tracks cursor position history (last 10 positions)
+- Calculates movement speed and trajectory
+- Detects interactive elements (buttons, links, inputs)
+- Applies assistance when hesitation detected
+- Gradually restores UI after interaction
+
+**Popup Interface** ([popup.html](popup.html), [popup.js](popup.js))
+- Control panel for user settings
+- Real-time statistics display
+- Sensitivity adjustment (1-5 scale)
+- Visual feedback toggle
+- Auto-adapt learning toggle
+
+**Background Worker** ([background.js](background.js))
+- Manages cross-tab communication
+- Persists user settings and patterns
+- Handles installation and updates
+
+### Detection Algorithm
+
+```javascript
+// Hesitation is detected when:
+1. Mouse hovers over interactive element
+2. Movement speed < 100 pixels/second
+3. Hover duration > (1500ms / sensitivity)
+4. Element hasn't been assisted yet
+
+// Assistance applied:
+- Padding increased by 8-16px (easier clicking)
+- Blue glow added (2px shadow, #3b82f6)
+- Surrounding elements opacity reduced to 30%
+- Smooth 0.3s transition animations
+```
+
+## Configuration
+
+### Settings Available
+
+| Setting | Description | Default | Range |
+|---------|-------------|---------|-------|
+| Enable Assistance | Master on/off switch | ON | Toggle |
+| Sensitivity | How quickly assistance triggers | 3 | 1-5 |
+| Visual Feedback | Show blue glow and highlights | ON | Toggle |
+| Auto-Adapt | Learn from user patterns | ON | Toggle |
+
+### Sensitivity Levels
+
+- **1 (Low)** - Assistance triggers after 1.5 seconds of hovering
+- **2** - 750ms delay
+- **3 (Default)** - 500ms delay (balanced)
+- **4** - 375ms delay
+- **5 (High)** - 300ms delay (immediate assistance)
+
 ## Project Structure
 
 ```
 extension/
-├── manifest.json       # Extension config
-├── popup.html         # UI you see when clicking icon
-├── popup.css          # Popup styling
-├── popup.js           # Popup logic
-├── content.js         # Main magic (runs on every page)
-├── content.css        # Injected styles
-├── background.js      # Background service worker
-└── icons/            # Extension icons (you need to add)
+├── manifest.json       # Chrome extension configuration (Manifest V3)
+├── icons/             # Extension icons (16px, 48px, 128px)
+├── popup.html         # Settings UI (opens when clicking extension icon)
+├── popup.css          # Popup styling (modern, accessible design)
+├── popup.js           # Popup logic and settings management
+├── content.js         # CORE: Cursor tracking and UI adaptation
+├── content.css        # Injected styles for visual feedback
+├── background.js      # Service worker for persistence
+├── ml-helpers.js      # AI/ML functions (ready for integration)
+└── README.md          # This file
 ```
-
-## How It Works
-
-1. **Content Script** (`content.js`) runs on every webpage
-2. Tracks your mouse movements constantly
-3. Detects when you're hesitating (slow movement, hovering)
-4. Automatically:
-   - Expands button click areas
-   - Fades non-essential elements
-   - Adds visual highlights
-   - Makes clicking easier
-5. Gradually restores normal UI after successful click
 
 ## Next Steps for AI
 
