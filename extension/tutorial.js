@@ -22,7 +22,7 @@
     },
     {
       id: 'hover-demo',
-      title: 'Step 1 of 3',
+      title: 'Step 1 of 4',
       message:
         'When you move your mouse slowly over a button,\nwe help you by making it bigger.\n\nTry it now: Move your mouse over this button.',
       showTestButton: true,
@@ -30,7 +30,7 @@
     },
     {
       id: 'feedback',
-      title: 'Step 2 of 3',
+      title: 'Step 2 of 4',
       message:
         "Great job! 🎉\n\nDid you see the button get bigger?\n\nThat's Steady Assist helping you click more easily.",
       buttons: [
@@ -39,10 +39,21 @@
       ],
     },
     {
-      id: 'settings',
-      title: 'Step 3 of 3',
+      id: 'dashboard',
+      title: 'Step 3 of 4',
       message:
-        "You're all set! ✓\n\nSteady Assist is now working.\n\nTo turn it on or off, click the extension icon\nin your browser toolbar.",
+        "Now let's see your control panel.\n\nClick the extension icon in your toolbar to see options:\n\n• Motor Impaired Mode - for shaky hands\n• Visual Impaired Mode - for better visibility",
+      showPopupHint: true,
+      buttons: [
+        { text: 'Back', action: 'back' },
+        { text: 'Next', action: 'next', primary: true },
+      ],
+    },
+    {
+      id: 'settings',
+      title: 'Step 4 of 4',
+      message:
+        "You're all set! ✓\n\nSteady Assist is now working.\n\nYou can turn modes on/off anytime from the extension icon.",
       buttons: [
         { text: 'Back', action: 'back' },
         { text: 'Done', action: 'finish', primary: true },
@@ -149,18 +160,37 @@
         pointer-events: auto;
         position: relative;
         z-index: 2147483647;
+        transition: all 0.3s ease;
+        transform: scale(1);
+        transform-origin: left center;
+        margin-right: 12px;
       `;
+
+      let hoverTimer = null;
 
       testBtn.addEventListener('mouseenter', () => {
         if (!testButtonHovered) {
-          testButtonHovered = true;
-          testBtn.textContent = '✓ Great!';
-          testBtn.style.background = '#10b981';
+          // Start growing animation after 1 second hover
+          hoverTimer = setTimeout(() => {
+            // Grow the button (simulate assistance)
+            testBtn.style.transform = 'scale(1.5)';
+            testBtn.style.background = '#10b981';
+            testBtn.textContent = '✓ Great!';
+            testButtonHovered = true;
 
-          // Auto-advance to next step after successful hover
-          setTimeout(() => {
-            handleAction('next');
-          }, 1000); // 1 second delay so they see the success message
+            // Advance to next step after showing success
+            setTimeout(() => {
+              handleAction('next');
+            }, 1200);
+          }, 1000); // Wait 1 second of hovering
+        }
+      });
+
+      testBtn.addEventListener('mouseleave', () => {
+        // If they leave before 1 second, cancel the hover
+        if (hoverTimer && !testButtonHovered) {
+          clearTimeout(hoverTimer);
+          testBtn.style.transform = 'scale(1)';
         }
       });
     }
@@ -171,6 +201,9 @@
       display: flex;
       gap: 12px;
       justify-content: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
+      min-height: 60px;
     `;
 
     // Add test button to button container if it exists
