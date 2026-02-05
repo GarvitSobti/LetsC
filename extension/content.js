@@ -502,7 +502,6 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   }
 
   function expandClickArea(element, activeMode) {
-    // Increase padding for layout shift (no transform to avoid mirroring)
     const metrics = getOriginalMetrics(element);
     const sizeScale =
       activeMode === 'motor'
@@ -510,22 +509,25 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         : activeMode === 'visual'
           ? Math.min(2, visualImpairedScale)
           : 2;
-    const maxAdd =
-      (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
-    const additionalPadding = maxAdd;
 
-    element.style.paddingTop = `${metrics.top + additionalPadding}px`;
-    element.style.paddingRight = `${metrics.right + additionalPadding}px`;
-    element.style.paddingBottom = `${metrics.bottom + additionalPadding}px`;
-    element.style.paddingLeft = `${metrics.left + additionalPadding}px`;
+    // Use transform scale for motor mode to make button visually bigger
+    if (activeMode === 'motor') {
+      element.style.transform = `scale(${sizeScale})`;
+      element.style.transformOrigin = 'center';
+      element.style.zIndex = '999999';
+    } else if (activeMode === 'visual') {
+      // For visual mode, use padding + min-size
+      const maxAdd =
+        (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
+      const additionalPadding = maxAdd;
 
-    if (activeMode === 'visual') {
+      element.style.paddingTop = `${metrics.top + additionalPadding}px`;
+      element.style.paddingRight = `${metrics.right + additionalPadding}px`;
+      element.style.paddingBottom = `${metrics.bottom + additionalPadding}px`;
+      element.style.paddingLeft = `${metrics.left + additionalPadding}px`;
       element.style.minHeight = `${metrics.height * sizeScale}px`;
       element.style.minWidth = `${metrics.width * sizeScale}px`;
     }
-
-    element.style.removeProperty('transform');
-    element.style.removeProperty('transform-origin');
   }
 
   function attachExitListeners(element) {
@@ -573,18 +575,24 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     // Gradually restore original UI
     element.style.transition = 'all 0.8s ease';
 
-    // Restore padding
+    // Restore padding and transforms
     const metrics = originalMetrics.get(element);
     if (metrics) {
       element.style.padding = metrics.padding;
       element.style.fontSize = metrics.fontSize;
       element.style.minHeight = '';
       element.style.minWidth = '';
+      element.style.transform = '';
+      element.style.transformOrigin = '';
+      element.style.zIndex = '';
     } else {
       element.style.padding = '';
       element.style.fontSize = '';
       element.style.minHeight = '';
       element.style.minWidth = '';
+      element.style.transform = '';
+      element.style.transformOrigin = '';
+      element.style.zIndex = '';
     }
 
     // Remove highlight
