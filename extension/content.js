@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v6';
+const STEADY_ASSIST_BUILD = 'v7';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -305,9 +305,10 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     // Increase padding to make element easier to click
     const metrics = getOriginalMetrics(element);
     const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
-    // Cap to 2x area => scale factor sqrt(2)
-    const areaScale = Math.SQRT2;
-    const maxAdd = (Math.min(metrics.width, metrics.height) * (areaScale - 1)) / 2;
+    // Cap to 2x width/height => scale factor 2
+    const sizeScale = 2;
+    const maxAdd =
+      (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
     const cappedPadding = Math.min(additionalPadding, maxAdd);
 
     element.style.paddingTop = `${metrics.top + cappedPadding}px`;
@@ -319,7 +320,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     const currentFontSize = parseFloat(metrics.fontSize) || 0;
     if (currentFontSize) {
       const fontScale = Math.min(
-        areaScale,
+        sizeScale,
         1 + cappedPadding / Math.max(1, Math.min(metrics.width, metrics.height))
       );
       element.style.fontSize = `${currentFontSize * fontScale}px`;
