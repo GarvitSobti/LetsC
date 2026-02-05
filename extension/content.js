@@ -2,8 +2,8 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = `build-${Date.now()}`;
-console.log(`🧪 Steady Assist build tag: ${STEADY_ASSIST_BUILD}`);
+const STEADY_ASSIST_BUILD = 'v2';
+console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
   'use strict';
