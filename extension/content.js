@@ -336,12 +336,14 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     
     console.log('🧹 Simplifying surroundings for:', element.tagName);
     
-    const allElements = document.querySelectorAll('*');
+    // Find only actual interactive elements (a, button, input, select, textarea)
+    const interactiveSelectors = 'a, button, input, select, textarea';
+    const allInteractive = document.querySelectorAll(interactiveSelectors);
     let hiddenCount = 0;
 
-    allElements.forEach(el => {
-      // Skip the assisted element itself and its children
-      if (el === element || element.contains(el) || el.contains(element)) {
+    allInteractive.forEach(el => {
+      // Skip the assisted element itself
+      if (el === element) {
         return;
       }
 
@@ -349,15 +351,32 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       const distance = calculateDistance(rect, elRect);
 
       // Hide nearby interactive elements (buttons, links, inputs)
-      if (isInteractiveElement(el) && distance < SIMPLIFICATION_RADIUS) {
+      if (distance < SIMPLIFICATION_RADIUS && distance > 0) {
         el.style.opacity = '0.15'; // Make them barely visible
         el.style.pointerEvents = 'none'; // Prevent accidental clicks
+        el.style.cursor = 'not-allowed'; // Show it's disabled
         el.setAttribute('data-steady-hidden', 'true');
         hiddenCount++;
         console.log('  Hidden nearby button:', el.tagName, 'distance:', distance.toFixed(0) + 'px');
-      } 
+      }
+    });
+
+    // Also fade non-interactive visual clutter nearby
+    const allElements = document.querySelectorAll('*');
+    allElements.forEach(el => {
+      if (el === element || element.contains(el) || el.contains(element)) {
+        return;
+      }
+      
+      if (isInteractiveElement(el)) {
+        return; // Skip interactive elements (already handled above)
+      }
+
+      const elRect = el.getBoundingClientRect();
+      const distance = calculateDistance(rect, elRect);
+
       // Fade non-interactive elements that are very close
-      else if (!isInteractiveElement(el) && distance < SIMPLIFICATION_RADIUS * 0.8) {
+      if (distance < SIMPLIFICATION_RADIUS * 0.6 && distance > 0) {
         const fadeAmount = 0.3; // Fade to 30%
         el.style.opacity = fadeAmount.toString();
         el.setAttribute('data-steady-faded', 'true');
