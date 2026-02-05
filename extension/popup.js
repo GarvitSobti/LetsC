@@ -7,6 +7,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const sensitivityValue = document.getElementById('sensitivityValue');
   const visualFeedback = document.getElementById('visualFeedback');
   const autoAdapt = document.getElementById('autoAdapt');
+  const motorImpaired = document.getElementById('motorImpaired');
+  const visualImpaired = document.getElementById('visualImpaired');
+  const visualImpairedScale = document.getElementById('visualImpairedScale');
+  const visualImpairedScaleValue = document.getElementById(
+    'visualImpairedScaleValue'
+  );
   const resetBtn = document.getElementById('resetBtn');
   const statsCard = document.getElementById('statsCard');
   const helpBtn = document.getElementById('helpBtn');
@@ -34,12 +40,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load saved settings
   chrome.storage.local.get(
-    ['enabled', 'sensitivity', 'visualFeedback', 'autoAdapt', 'stats'],
+    [
+      'enabled',
+      'sensitivity',
+      'visualFeedback',
+      'autoAdapt',
+      'motorImpaired',
+      'visualImpaired',
+      'visualImpairedScale',
+      'stats',
+    ],
     function (result) {
       mainToggle.checked = result.enabled !== false; // default true
       sensitivitySlider.value = result.sensitivity || 3;
       visualFeedback.checked = result.visualFeedback !== false;
       autoAdapt.checked = result.autoAdapt !== false;
+      motorImpaired.checked = result.motorImpaired === true;
+      visualImpaired.checked = result.visualImpaired === true;
+      const scaleValue = result.visualImpairedScale || 2;
+      visualImpairedScale.value = scaleValue;
+      updateVisualScaleLabel(scaleValue);
 
       updateSensitivityLabel(result.sensitivity || 3);
       updateStatus(mainToggle.checked);
@@ -93,6 +113,36 @@ document.addEventListener('DOMContentLoaded', function () {
   // Auto-adapt toggle
   autoAdapt.addEventListener('change', function () {
     chrome.storage.local.set({ autoAdapt: autoAdapt.checked });
+  });
+
+  // Motor impaired mode toggle
+  motorImpaired.addEventListener('change', function () {
+    chrome.storage.local.set({ motorImpaired: motorImpaired.checked });
+
+    sendMessageToActiveTab({
+      type: 'UPDATE_MOTOR_IMPAIRED',
+      enabled: motorImpaired.checked,
+    });
+  });
+
+  // Visually impaired mode toggle
+  visualImpaired.addEventListener('change', function () {
+    chrome.storage.local.set({ visualImpaired: visualImpaired.checked });
+
+    sendMessageToActiveTab({
+      type: 'UPDATE_VISUAL_IMPAIRED',
+      enabled: visualImpaired.checked,
+    });
+  });
+
+  visualImpairedScale.addEventListener('input', function () {
+    const value = parseFloat(visualImpairedScale.value);
+    updateVisualScaleLabel(value);
+    chrome.storage.local.set({ visualImpairedScale: value });
+    sendMessageToActiveTab({
+      type: 'UPDATE_VISUAL_IMPAIRED_SCALE',
+      value: value,
+    });
   });
 
   // Reset button
@@ -247,5 +297,9 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       document.getElementById('confidenceLevel').textContent = 'Excellent';
     }
+  }
+
+  function updateVisualScaleLabel(value) {
+    visualImpairedScaleValue.textContent = `${value.toFixed(1)}x`;
   }
 });
