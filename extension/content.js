@@ -354,43 +354,55 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function expandClickArea(element) {
-    // Subtly expand to help with clicking, but don't transform/scale
-    const currentPadding = parseInt(window.getComputedStyle(element).padding) || 0;
-    const additionalPadding = 8 + (sensitivity * 2); // Subtle: 8-18px
-
-    element.style.padding = `${currentPadding + additionalPadding}px`;
-    element.style.transition = 'all 0.15s ease'; // Smooth but quick
-    element.setAttribute('data-original-padding', currentPadding);
+    // Enlarge button smoothly using transform (won't cause text flipping)
+    element.style.transform = 'scale(1.15)'; // Enlarge to 115%
+    element.style.transformOrigin = 'center';
+    element.style.transition = 'all 0.15s ease';
+    element.style.position = 'relative';
+    element.style.zIndex = '10000';
   }
 
   function simplifySurroundings(element) {
     // Smart button simplification: Hide nearby interactive elements to prevent mis-clicks
     const rect = element.getBoundingClientRect();
-    const SIMPLIFICATION_RADIUS = 150; // Hide buttons within 150px radius
+    const SMALL_RADIUS = 150; // Use when multiple buttons nearby
+    const LARGE_RADIUS = 400; // Use when only one link (provide visual feedback)
     
     console.log('🧹 Simplifying surroundings for:', element.tagName);
     
-    // Find only actual interactive elements (a, button, input, select, textarea)
+    // First pass: Count how many interactive elements are within small radius
     const interactiveSelectors = 'a, button, input, select, textarea';
     const allInteractive = document.querySelectorAll(interactiveSelectors);
-    let hiddenCount = 0;
+    let nearbyCount = 0;
 
     allInteractive.forEach(el => {
-      // Skip the assisted element itself
-      if (el === element) {
-        return;
+      if (el === element) return;
+      const elRect = el.getBoundingClientRect();
+      const distance = calculateDistance(rect, elRect);
+      if (distance < SMALL_RADIUS && distance > 0) {
+        nearbyCount++;
       }
+    });
 
+    // Choose radius based on nearby button count
+    const SIMPLIFICATION_RADIUS = nearbyCount > 0 ? SMALL_RADIUS : LARGE_RADIUS;
+    console.log('📊 Nearby buttons count:', nearbyCount, '| Using radius:', SIMPLIFICATION_RADIUS + 'px');
+
+    // Second pass: Hide buttons within chosen radius
+    let hiddenCount = 0;
+    allInteractive.forEach(el => {
+      if (el === element) return;
+      
       const elRect = el.getBoundingClientRect();
       const distance = calculateDistance(rect, elRect);
 
-      // Hide nearby interactive elements (buttons, links, inputs)
+      // Hide nearby interactive elements
       if (distance < SIMPLIFICATION_RADIUS && distance > 0) {
-        el.style.opacity = '0.08'; // Make them VERY barely visible (almost invisible)
-        el.style.pointerEvents = 'none'; // Prevent accidental clicks
-        el.style.cursor = 'not-allowed'; // Show it's disabled
-        el.style.color = '#999'; // Make text greyed out
-        el.style.filter = 'grayscale(100%)'; // Completely desaturate
+        el.style.opacity = '0.08';
+        el.style.pointerEvents = 'none';
+        el.style.cursor = 'not-allowed';
+        el.style.color = '#999';
+        el.style.filter = 'grayscale(100%)';
         el.setAttribute('data-steady-hidden', 'true');
         hiddenCount++;
         console.log('  Hidden nearby button:', el.tagName, 'distance:', distance.toFixed(0) + 'px');
@@ -405,7 +417,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       }
       
       if (isInteractiveElement(el)) {
-        return; // Skip interactive elements (already handled above)
+        return;
       }
 
       const elRect = el.getBoundingClientRect();
@@ -413,7 +425,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
       // Fade non-interactive elements that are very close
       if (distance < SIMPLIFICATION_RADIUS * 0.7 && distance > 0) {
-        const fadeAmount = 0.15; // Darken to 15% (very dark)
+        const fadeAmount = 0.15;
         el.style.opacity = fadeAmount.toString();
         el.setAttribute('data-steady-faded', 'true');
       }
@@ -433,16 +445,16 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function graduallyRestoreUI(element) {
-    // Immediately restore original UI
+    // Restore original UI
     element.style.transition = 'all 0.15s ease';
 
-    // Restore padding
-    const originalPadding = element.getAttribute('data-original-padding');
-    if (originalPadding) {
-      element.style.padding = `${originalPadding}px`;
-    }
+    // Remove scale enlargement
+    element.style.transform = '';
+    element.style.transformOrigin = '';
+    element.style.position = '';
+    element.style.zIndex = '';
 
-    // Remove all highlights immediately
+    // Remove all highlights
     element.style.boxShadow = '';
     element.style.outline = '';
     element.style.outlineOffset = '';
