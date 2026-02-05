@@ -41,27 +41,32 @@ git push origin yourname/feature-name
 ## 🔧 Useful Git Commands
 
 ### See your current branch
+
 ```bash
 git branch
 ```
 
 ### Switch to a different branch
+
 ```bash
 git checkout branch-name
 ```
 
 ### See what changed
+
 ```bash
 git status
 git diff
 ```
 
 ### Undo changes (before commit)
+
 ```bash
 git checkout -- filename
 ```
 
 ### Update your branch with latest main
+
 ```bash
 git checkout main
 git pull origin main
@@ -72,10 +77,12 @@ git merge main
 ## 🌐 Running the Project
 
 ### Frontend Only (Simple)
+
 1. Open `frontend/index.html` in browser
 2. Or use VS Code Live Server extension
 
 ### With Backend (Node.js)
+
 ```bash
 # Install dependencies (first time only)
 npm install
@@ -98,6 +105,7 @@ npm run dev
 ## 🎨 VS Code Extensions (Recommended)
 
 Install these in VS Code:
+
 1. **Live Server** - Preview HTML instantly
 2. **Prettier** - Auto-format code
 3. **GitLens** - Better Git visualization
@@ -106,6 +114,7 @@ Install these in VS Code:
 ## 🆘 Emergency Fixes
 
 ### I committed to main by mistake!
+
 ```bash
 git checkout -b yourname/fix-branch
 git push origin yourname/fix-branch
@@ -114,17 +123,20 @@ git reset --hard origin/main
 ```
 
 ### I have merge conflicts!
+
 1. Open the file in VS Code
 2. Look for `<<<<<<<` markers
 3. Choose which code to keep
 4. Delete the markers
 5. Save and commit:
+
 ```bash
 git add .
 git commit -m "fix: resolve merge conflicts"
 ```
 
 ### I want to start over!
+
 ```bash
 # Discard ALL local changes (careful!)
 git reset --hard origin/main

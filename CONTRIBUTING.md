@@ -7,6 +7,7 @@ Thank you for contributing! Here's how to get started.
 Use this format: `yourname/feature-description`
 
 Examples:
+
 - `garvit/login-page`
 - `rohan/api-integration`
 - `priya/mobile-responsive`
@@ -15,6 +16,7 @@ Examples:
 ## 📝 Commit Message Guidelines
 
 ### Format
+
 ```
 <type>: <short description>
 
@@ -22,6 +24,7 @@ Examples:
 ```
 
 ### Types
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -31,6 +34,7 @@ Examples:
 - `chore`: Maintenance tasks
 
 ### Examples
+
 ```
 feat: Add user login form with validation
 
@@ -44,17 +48,20 @@ style: Format code according to style guide
 ## 🔄 Pull Request Process
 
 1. **Create your branch**
+
    ```bash
    git checkout -b yourname/feature-name
    ```
 
 2. **Make changes and commit**
+
    ```bash
    git add .
    git commit -m "feat: Add awesome feature"
    ```
 
 3. **Push to GitHub**
+
    ```bash
    git push origin yourname/feature-name
    ```
@@ -78,6 +85,7 @@ style: Format code according to style guide
 ## ✅ Code Review Checklist
 
 Before requesting review, make sure:
+
 - [ ] Code works locally
 - [ ] No console errors
 - [ ] Code is formatted properly
@@ -103,6 +111,7 @@ Before requesting review, make sure:
 ## 🎯 During Hackathon
 
 **Speed matters, but quality still counts:**
+
 - Quick reviews (< 30 min)
 - Focus on functionality first
 - Optimize later if time permits
