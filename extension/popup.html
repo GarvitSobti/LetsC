@@ -1,92 +1,140 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Steady Assist</title>
-    <link rel="stylesheet" href="popup.css" />
-  </head>
-  <body>
-    <div class="container">
-      <header>
-        <h1>Steady Assist</h1>
-        <p class="tagline">Making the web easier to navigate</p>
-      </header>
 
-      <main>
-        <!-- Main Toggle -->
-        <div class="toggle-section">
-          <label class="toggle-label">
-            <span class="toggle-text">Enable Assistance</span>
-            <div class="toggle-wrapper">
-              <input type="checkbox" id="mainToggle" checked />
-              <span class="toggle-slider"></span>
-            </div>
-          </label>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steady Assist</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Steady Assist</h1>
+      <p class="tagline">Making the web easier to navigate</p>
+    </header>
+
+    <main>
+      <!-- Main Toggle -->
+      <div class="toggle-section">
+        <label class="toggle-label">
+          <span class="toggle-text">Enable Assistance</span>
+          <div class="toggle-wrapper">
+            <input type="checkbox" id="mainToggle" checked />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Status Indicator -->
+      <div class="status-card">
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span id="statusText">Active on this page</span>
+        </div>
+      </div>
+
+      <!-- Stats Display (shows after use) -->
+      <div class="stats-card" id="statsCard" style="display: none">
+        <h3>Session Stats</h3>
+        <div class="stat-row">
+          <span class="stat-label">Assistance Events</span>
+          <span class="stat-value" id="assistCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Clicks Stabilized</span>
+          <span class="stat-value" id="clickCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Misclick Count</span>
+          <span class="stat-value" id="misclickCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Confidence Level</span>
+          <span class="stat-value" id="confidenceLevel">Learning...</span>
+        </div>
+        <!-- <div class="stat-row"> -->
+        <!-- <span class="stat-label">Assisted Ratio</span>
+          <span class="stat-value" id="assistedRatio">0%</span>
+        </div> -->
+      </div>
+
+      <div class="metrics-card" id="metricsCard" style="display: none;">
+        <h3>Metrics</h3>
+
+        <div class="metrics-tabs" role="tablist" aria-label="Metrics tabs">
+          <button class="tab active" data-tab="overview">Overview</button>
+          <button class="tab" data-tab="trends">Trends</button>
         </div>
 
-        <!-- Status Indicator -->
-        <div class="status-card">
-          <div class="status-indicator">
-            <div class="status-dot active"></div>
-            <span id="statusText">Active on this page</span>
+        <!-- Charts grid -->
+        <div class="charts-grid">
+          <!-- Chart / graph placeholders; replace with <canvas> if using Chart.js -->
+          <div class="chart-container" id="assistChartContainer">
+            <h4>Assistance Events</h4>
+            <canvas id="assistChart" width="300" height="150"></canvas>
           </div>
+
+          <div class="chart-container" id="clicksChartContainer">
+            <h4>Clicks Stabilized</h4>
+            <canvas id="clicksChart" width="300" height="150"></canvas>
+          </div>
+
+          <div class="chart-container" id="confidenceChartContainer">
+            <h4>Confidence Over Time</h4>
+            <canvas id="confidenceChart" width="300" height="150"></canvas>
+          </div>
+
+          <!-- <div class="chart-container" id="assistedChartContainer">
+            <h4>Assisted vs Unassisted</h4>
+            <canvas id="assistedChart" width="300" height="120"></canvas>
+          </div> -->
         </div>
 
-        <!-- Stats Display (shows after use) -->
-        <div class="stats-card" id="statsCard" style="display: none">
-          <h3>Session Stats</h3>
-          <div class="stat-row">
-            <span class="stat-label">Assistance Events</span>
-            <span class="stat-value" id="assistCount">0</span>
+        <!-- Optionally a small footer line / note -->
+        <p class="metrics-note">Graphs reflect data from this browser session only.</p>
+      </div>
+
+      <!-- Settings (collapsed by default) -->
+      <details class="settings-section">
+        <summary>Advanced Settings</summary>
+        <div class="settings-content">
+          <div class="setting-item">
+            <label for="sensitivity">Sensitivity</label>
+            <input type="range" id="sensitivity" min="1" max="5" value="3" />
+            <span class="setting-value" id="sensitivityValue">Medium</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Clicks Stabilized</span>
-            <span class="stat-value" id="clickCount">0</span>
+
+          <div class="setting-item">
+            <label for="visualFeedback">
+              <input type="checkbox" id="visualFeedback" checked />
+              Show visual feedback
+            </label>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Confidence Level</span>
-            <span class="stat-value" id="confidenceLevel">Learning...</span>
+
+          <div class="setting-item">
+            <label for="autoAdapt">
+              <input type="checkbox" id="autoAdapt" checked />
+              Auto-adapt to my habits
+            </label>
           </div>
         </div>
+      </details>
 
-        <!-- Settings (collapsed by default) -->
-        <details class="settings-section">
-          <summary>Advanced Settings</summary>
-          <div class="settings-content">
-            <div class="setting-item">
-              <label for="sensitivity">Sensitivity</label>
-              <input type="range" id="sensitivity" min="1" max="5" value="3" />
-              <span class="setting-value" id="sensitivityValue">Medium</span>
-            </div>
+      <!-- Quick Actions -->
+      <div class="actions">
+        <button class="btn-secondary" id="resetBtn">Reset Learning</button>
+      </div>
+    </main>
 
-            <div class="setting-item">
-              <label for="visualFeedback">
-                <input type="checkbox" id="visualFeedback" checked />
-                Show visual feedback
-              </label>
-            </div>
+    <footer>
+      <p class="footer-text">No data leaves your browser</p>
+    </footer>
+  </div>
 
-            <div class="setting-item">
-              <label for="autoAdapt">
-                <input type="checkbox" id="autoAdapt" checked />
-                Auto-adapt to my habits
-              </label>
-            </div>
-          </div>
-        </details>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="popup.js"></script>
+</body>
 
-        <!-- Quick Actions -->
-        <div class="actions">
-          <button class="btn-secondary" id="resetBtn">Reset Learning</button>
-        </div>
-      </main>
-
-      <footer>
-        <p class="footer-text">No data leaves your browser</p>
-      </footer>
-    </div>
-
-    <script src="popup.js"></script>
-  </body>
 </html>

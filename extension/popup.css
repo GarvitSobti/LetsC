@@ -1,3 +1,4 @@
+/* Base / reset */
 * {
   margin: 0;
   padding: 0;
@@ -5,7 +6,9 @@
 }
 
 body {
-  width: 360px;
+  width: 420px;
+  max-width: 95vw;
+  min-width: 320px;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
     Cantarell, sans-serif;
@@ -14,7 +17,7 @@ body {
 }
 
 .container {
-  padding: 20px;
+  padding: 18px;
 }
 
 /* Header */
@@ -93,11 +96,11 @@ h1 {
   transition: 0.3s;
 }
 
-input:checked + .toggle-slider {
+input:checked+.toggle-slider {
   background-color: #3b82f6;
 }
 
-input:checked + .toggle-slider:before {
+input:checked+.toggle-slider:before {
   transform: translateX(24px);
 }
 
@@ -131,10 +134,12 @@ input:checked + .toggle-slider:before {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -184,6 +189,116 @@ input:checked + .toggle-slider:before {
   font-size: 16px;
   font-weight: 600;
   color: #0f172a;
+}
+
+/* Metrics Card (new) */
+.metrics-card {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Heading */
+.metrics-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tabs for metrics views (Overview / Trends) */
+.metrics-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metrics-tabs .tab {
+  flex: 1;
+  appearance: none;
+  background: #f8fafc;
+  border: 1px solid #e6eef8;
+  /* subtle */
+  color: #475569;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.metrics-tabs .tab:hover {
+  background: #f1f5f9;
+}
+
+.metrics-tabs .tab.active {
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  border-color: #cfe3ff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08);
+}
+
+/* Grid of charts */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* Individual chart container */
+.chart-container {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.chart-container h4 {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* Make canvas responsive inside the container */
+.chart-container canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 160px;
+  display: block;
+}
+
+/* Small note under metrics */
+.metrics-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* Ensure metrics follow same visual rhythm as other cards on small screens */
+@media (max-width: 420px) {
+  body {
+    width: 100%;
+  }
+
+  .container {
+    padding: 12px;
+  }
 }
 
 /* Settings */

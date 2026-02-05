@@ -1,4 +1,5 @@
 // Popup UI logic
+
 document.addEventListener('DOMContentLoaded', function () {
   const mainToggle = document.getElementById('mainToggle');
   const statusText = document.getElementById('statusText');
@@ -9,6 +10,99 @@ document.addEventListener('DOMContentLoaded', function () {
   const autoAdapt = document.getElementById('autoAdapt');
   const resetBtn = document.getElementById('resetBtn');
   const statsCard = document.getElementById('statsCard');
+  const metricsCard = document.getElementById('metricsCard');
+
+
+  // charts stuff not working
+  // Chart instances (will remain null if Chart.js isn't loaded or canvas missing)
+  let assistChart = null;
+  let clicksChart = null;
+  let confidenceChart = null;
+
+  // Initialize charts only if Chart is available
+  function initCharts() {
+    if (typeof Chart === 'undefined') return;
+    const assistCtx = document.getElementById('assistChart').getContext('2d');
+    const clicksCtx = document.getElementById('clicksChart').getContext('2d');
+    const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+
+
+    assistChart = createLineChart(
+      assistCtx,
+      "Assistance Events",
+      sessionData.assistEvents
+    );
+
+    clicksChart = createLineChart(
+      clicksCtx,
+      "Clicks Stabilized",
+      sessionData.clicks
+    );
+
+    confidenceChart = createLineChart(
+      confidenceCtx,
+      "Confidence",
+      sessionData.confidence,
+      0,
+      100
+    );
+  }
+
+  function createLineChart(ctx, label, data, minY = 0, maxY = null) {
+    return new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: sessionData.timestamps,
+        datasets: [
+          {
+            label,
+            data,
+            fill: false,
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+
+        scales: {
+          y: {
+            beginAtZero: true,
+            min: minY,
+            max: maxY
+          }
+        },
+
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+  }
+
+  function recordMetrics(assist, clicks, confidence) {
+    const time = new Date().toLocaleTimeString();
+
+    sessionData.timestamps.push(time);
+    sessionData.assistEvents.push(assist);
+    sessionData.clicks.push(clicks);
+    sessionData.confidence.push(confidence);
+
+    refreshCharts();
+  }
+
+  function refreshCharts() {
+    if (!assistChart) return;
+
+    assistChart.update();
+    clicksChart.update();
+    confidenceChart.update();
+  }
+
 
   // Load saved settings
   chrome.storage.local.get(
@@ -22,10 +116,19 @@ document.addEventListener('DOMContentLoaded', function () {
       updateSensitivityLabel(result.sensitivity || 3);
       updateStatus(mainToggle.checked);
 
+      // Initialize charts (in case Chart is already loaded)
+      initCharts();
+
       // Show stats if available
-      if (result.stats && result.stats.assistCount > 0) {
+      if (result.stats && (result.stats.assistCount > 0 || result.stats.clickCount > 0 || result.stats.misclickCount)) {
         statsCard.style.display = 'block';
+        metricsCard.style.display = 'block';
         updateStats(result.stats);
+        recordMetrics(result.stats); // update chart visuals from saved stats
+      } else {
+        statsCard.style.display = 'none';
+        // keep metrics hidden until stats exist
+        // metricsCard.style.display = 'none';
       }
     }
   );
@@ -78,10 +181,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (confirm('Reset all learned patterns? This cannot be undone.')) {
       chrome.storage.local.set({
         userPatterns: {},
-        stats: { assistCount: 0, clickCount: 0, confidenceLevel: 0 },
+        stats: { assistCount: 0, clickCount: 0, confidenceLevel: 0, misclickCount: 0 },
       });
 
       statsCard.style.display = 'none';
+      metricsCard.style.display = 'none';
+
+      // reset charts to zeros (if present)
+      recordMetrics({ assistCount: 0, clickCount: 0, confidenceLevel: 0, misclickCount });
 
       sendMessageToActiveTab({
         type: 'RESET_LEARNING',
@@ -104,14 +211,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Listen for stats updates from content script
-  chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-      if (request.type === 'STATS_UPDATE') {
-        statsCard.style.display = 'block';
-        updateStats(request.stats);
-      }
+  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.type === 'STATS_UPDATE') {
+      statsCard.style.display = 'block';
+      metricsCard.style.display = 'block';
+      updateStats(request.stats);
+      recordMetrics(request.stats); // refresh charts when new stats arrive
     }
-  );
+  });
 
   function updateStatus(enabled) {
     if (enabled) {
@@ -131,6 +238,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateStats(stats) {
     document.getElementById('assistCount').textContent = stats.assistCount || 0;
     document.getElementById('clickCount').textContent = stats.clickCount || 0;
+    document.getElementById('misclickCount').textContent = stats.misclickCount || 0;
+    document.getElementById('metricsCard').style.display = 'block';
 
     const confidence = stats.confidenceLevel || 0;
     if (confidence === 0) {
@@ -143,4 +252,5 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('confidenceLevel').textContent = 'Excellent';
     }
   }
+
 });
