@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const resetBtn = document.getElementById('resetBtn');
   const statsCard = document.getElementById('statsCard');
   const helpBtn = document.getElementById('helpBtn');
+  const dwellClick = document.getElementById('dwellClick');
+  const focusSpotlight = document.getElementById('focusSpotlight');
+  const autoScroll = document.getElementById('autoScroll');
 
   // Help button - replay tutorial
   if (helpBtn) {
@@ -48,6 +51,9 @@ document.addEventListener('DOMContentLoaded', function () {
       'motorImpaired',
       'visualImpaired',
       'visualImpairedScale',
+      'dwellClick',
+      'focusSpotlight',
+      'autoScroll',
       'stats',
     ],
     function (result) {
@@ -57,6 +63,9 @@ document.addEventListener('DOMContentLoaded', function () {
       autoAdapt.checked = result.autoAdapt !== false;
       motorImpaired.checked = result.motorImpaired === true;
       visualImpaired.checked = result.visualImpaired === true;
+      dwellClick.checked = result.dwellClick === true;
+      focusSpotlight.checked = result.focusSpotlight === true;
+      autoScroll.checked = result.autoScroll === true;
       const scaleValue = result.visualImpairedScale || 2;
       visualImpairedScale.value = scaleValue;
       updateVisualScaleLabel(scaleValue);
@@ -142,6 +151,33 @@ document.addEventListener('DOMContentLoaded', function () {
     sendMessageToActiveTab({
       type: 'UPDATE_VISUAL_IMPAIRED_SCALE',
       value: value,
+    });
+  });
+
+  // Dwell clicking toggle
+  dwellClick.addEventListener('change', function () {
+    chrome.storage.local.set({ dwellClick: dwellClick.checked });
+    sendMessageToActiveTab({
+      type: 'UPDATE_DWELL_CLICK',
+      enabled: dwellClick.checked,
+    });
+  });
+
+  // Focus spotlight toggle
+  focusSpotlight.addEventListener('change', function () {
+    chrome.storage.local.set({ focusSpotlight: focusSpotlight.checked });
+    sendMessageToActiveTab({
+      type: 'UPDATE_FOCUS_SPOTLIGHT',
+      enabled: focusSpotlight.checked,
+    });
+  });
+
+  // Auto-scroll toggle
+  autoScroll.addEventListener('change', function () {
+    chrome.storage.local.set({ autoScroll: autoScroll.checked });
+    sendMessageToActiveTab({
+      type: 'UPDATE_AUTO_SCROLL',
+      enabled: autoScroll.checked,
     });
   });
 

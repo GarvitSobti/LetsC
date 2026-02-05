@@ -13,6 +13,9 @@ chrome.runtime.onInstalled.addListener(details => {
     motorImpaired: false,
     visualImpaired: false,
     visualImpairedScale: 2,
+    dwellClick: false,
+    focusSpotlight: false,
+    autoScroll: false,
     stats: {
       assistCount: 0,
       clickCount: 0,

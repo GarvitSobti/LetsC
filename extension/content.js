@@ -18,6 +18,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   let motorImpaired = false;
   let visualImpaired = false;
   let visualImpairedScale = 2;
+  let dwellClickEnabled = false;
+  let focusSpotlightEnabled = false;
+  let autoScrollEnabled = false;
 
   // Cursor tracking
   let cursorHistory = [];
@@ -31,6 +34,21 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   const magneticRadiusPx = 40;
   const magneticSampleStep = 12;
   const originalMetrics = new WeakMap();
+
+  // Dwell clicking state
+  let dwellTimer = null;
+  let dwellTarget = null;
+  let dwellIndicator = null;
+  let dwellStartTime = null;
+  let dwellAccumulatedTime = 0;
+  let dwellUpdateInterval = null;
+
+  // Auto-scroll state
+  let autoScrollTimer = null;
+  const EDGE_THRESHOLD = 50; // pixels from edge to trigger scroll
+
+  // Focus spotlight overlay
+  let spotlightOverlay = null;
 
   // Stats
   let stats = {
@@ -67,6 +85,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         'motorImpaired',
         'visualImpaired',
         'visualImpairedScale',
+        'dwellClick',
+        'focusSpotlight',
+        'autoScroll',
       ],
       function (result) {
         console.log('⚙️ Settings loaded:', result);
@@ -77,6 +98,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         motorImpaired = result.motorImpaired === true;
         visualImpaired = result.visualImpaired === true;
         visualImpairedScale = result.visualImpairedScale || 2;
+        dwellClickEnabled = result.dwellClick === true;
+        focusSpotlightEnabled = result.focusSpotlight === true;
+        autoScrollEnabled = result.autoScroll === true;
 
         if (isEnabled) {
           console.log('✅ Assistance enabled, attaching listeners');
@@ -160,6 +184,33 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         break;
 
       case 'UPDATE_VISUAL_IMPAIRED_SCALE':
+        visualImpairedScale = request.value || 2;
+        clearAllAssistance();
+        break;
+
+      case 'UPDATE_DWELL_CLICK':
+        dwellClickEnabled = request.enabled;
+        if (!dwellClickEnabled) {
+          clearDwellClick();
+        }
+        break;
+
+      case 'UPDATE_FOCUS_SPOTLIGHT':
+        focusSpotlightEnabled = request.enabled;
+        if (!focusSpotlightEnabled) {
+          removeSpotlight();
+        }
+        break;
+
+      case 'UPDATE_AUTO_SCROLL':
+        autoScrollEnabled = request.enabled;
+        if (!autoScrollEnabled && autoScrollTimer) {
+          clearInterval(autoScrollTimer);
+          autoScrollTimer = null;
+        }
+        break;
+
+      case 'UPDATE_VISUAL_IMPAIRED_SCALE':
         visualImpairedScale = Math.min(2, request.value || 2);
         clearAllAssistance();
         break;
@@ -222,6 +273,23 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       // Immediate assist on hover for shaky hands
       applyAssistance(hoveredButton, 'hover');
       activeAssistedElement = hoveredButton;
+      
+      // Start/continue dwell clicking timer if enabled
+      if (dwellClickEnabled) {
+        startDwellClick(hoveredButton);
+      }
+      
+      // Show focus spotlight if enabled
+      if (focusSpotlightEnabled) {
+        showSpotlight(hoveredButton);
+      }
+    } else {
+      // For dwell clicking, allow tremor tolerance - don't immediately clear
+      // Only clear if no dwell in progress, or if they moved far away
+      if (dwellTarget && !isNearElement(dwellTarget, lastMousePos.x, lastMousePos.y, 80)) {
+        clearDwellClick();
+      }
+      removeSpotlight();
     }
 
     document.querySelectorAll('[data-steady-assist]').forEach(el => {
@@ -264,6 +332,11 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Analyze cursor behavior
     analyzeCursorBehavior();
+    
+    // Handle auto-scroll at screen edges
+    if (autoScrollEnabled) {
+      handleAutoScroll(e.clientX, e.clientY);
+    }
   }
 
   function handleMouseOver(e) {
@@ -740,6 +813,180 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       });
     } catch (err) {
       // Extension may be reloaded or navigated; ignore
+    }
+  }
+
+  // ===== DWELL CLICKING =====
+  function startDwellClick(element) {
+    if (!dwellClickEnabled || !element) return;
+    if (element.hasAttribute('data-steady-tutorial')) return; // Don't dwell-click tutorial elements
+    
+    // If same element, continue accumulating time
+    if (dwellTarget === element && dwellStartTime) {
+      const elapsed = Date.now() - dwellStartTime;
+      dwellAccumulatedTime += elapsed;
+    } else {
+      // New element, reset
+      clearDwellClick();
+      dwellTarget = element;
+      dwellAccumulatedTime = 0;
+    }
+    
+    dwellStartTime = Date.now();
+    
+    // Create or update countdown indicator
+    if (!dwellIndicator) {
+      dwellIndicator = document.createElement('div');
+      dwellIndicator.id = 'steady-dwell-indicator';
+      document.body.appendChild(dwellIndicator);
+      
+      // Update countdown every 100ms
+      dwellUpdateInterval = setInterval(updateDwellIndicator, 100);
+    }
+    
+    updateDwellIndicator();
+  }
+
+  function updateDwellIndicator() {
+    if (!dwellIndicator || !dwellTarget) return;
+    
+    const rect = dwellTarget.getBoundingClientRect();
+    const currentElapsed = dwellStartTime ? Date.now() - dwellStartTime : 0;
+    const totalTime = dwellAccumulatedTime + currentElapsed;
+    const remaining = Math.max(0, 2000 - totalTime);
+    const secondsLeft = Math.ceil(remaining / 1000);
+    
+    // Position above the button
+    dwellIndicator.style.cssText = `
+      position: fixed;
+      top: ${rect.top - 50}px;
+      left: ${rect.left + rect.width / 2 - 30}px;
+      width: 60px;
+      height: 60px;
+      background: rgba(59, 130, 246, 0.95);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      z-index: 2147483646;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    `;
+    
+    dwellIndicator.textContent = secondsLeft > 0 ? secondsLeft : '✓';
+    
+    // Auto-click when time is up
+    if (totalTime >= 2000) {
+      if (dwellTarget && !dwellTarget.hasAttribute('data-steady-tutorial')) {
+        dwellTarget.click();
+        stats.clickCount++;
+        updateStats();
+      }
+      clearDwellClick();
+    }
+  }
+
+  function clearDwellClick() {
+    if (dwellUpdateInterval) {
+      clearInterval(dwellUpdateInterval);
+      dwellUpdateInterval = null;
+    }
+    if (dwellIndicator) {
+      dwellIndicator.remove();
+      dwellIndicator = null;
+    }
+    dwellTarget = null;
+    dwellStartTime = null;
+    dwellAccumulatedTime = 0;
+  }
+
+  // ===== FOCUS SPOTLIGHT =====
+  function showSpotlight(element) {
+    if (!focusSpotlightEnabled || !element) return;
+    
+    removeSpotlight();
+    
+    spotlightOverlay = document.createElement('div');
+    spotlightOverlay.id = 'steady-spotlight-overlay';
+    const rect = element.getBoundingClientRect();
+    
+    spotlightOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 2147483644;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    `;
+    
+    // Create hole for the focused element
+    const clipPath = `polygon(
+      0% 0%, 0% 100%, ${rect.left - 5}px 100%, 
+      ${rect.left - 5}px ${rect.top - 5}px, 
+      ${rect.right + 5}px ${rect.top - 5}px, 
+      ${rect.right + 5}px ${rect.bottom + 5}px, 
+      ${rect.left - 5}px ${rect.bottom + 5}px, 
+      ${rect.left - 5}px 100%, 
+      100% 100%, 100% 0%
+    )`;
+    spotlightOverlay.style.clipPath = clipPath;
+    
+    document.body.appendChild(spotlightOverlay);
+  }
+
+  function removeSpotlight() {
+    if (spotlightOverlay) {
+      spotlightOverlay.remove();
+      spotlightOverlay = null;
+    }
+  }
+
+  // Helper: Check if cursor is near element (for tremor tolerance)
+  function isNearElement(element, x, y, threshold) {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    const distance = distanceToRect(rect, x, y);
+    return distance <= threshold;
+  }
+
+  // ===== AUTO-SCROLL =====
+  function handleAutoScroll(x, y) {
+    if (!autoScrollEnabled) return;
+    
+    const scrollSpeed = 5;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    let scrollX = 0;
+    let scrollY = 0;
+    
+    // Near top edge
+    if (y < EDGE_THRESHOLD) {
+      scrollY = -scrollSpeed;
+    }
+    // Near bottom edge
+    else if (y > viewportHeight - EDGE_THRESHOLD) {
+      scrollY = scrollSpeed;
+    }
+    
+    // Near left edge
+    if (x < EDGE_THRESHOLD) {
+      scrollX = -scrollSpeed;
+    }
+    // Near right edge
+    else if (x > viewportWidth - EDGE_THRESHOLD) {
+      scrollX = scrollSpeed;
+    }
+    
+    if (scrollX !== 0 || scrollY !== 0) {
+      window.scrollBy(scrollX, scrollY);
     }
   }
 
