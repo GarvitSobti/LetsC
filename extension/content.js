@@ -19,12 +19,16 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   let currentTarget = null;
   let hesitationTimer = null;
   let isHesitating = false;
+  let userTremorPattern = null;
+  let assistedElement = null;
 
   // Stats
   let stats = {
     assistCount: 0,
     clickCount: 0,
     confidenceLevel: 0,
+    successfulClicks: 0,
+    missedClicks: 0,
   };
 
   // Configuration
@@ -43,18 +47,20 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   function init() {
     console.log('🔧 Steady Assist: Initializing...');
 
-    // Load settings
+    // Load settings and learned patterns
     chrome.storage.local.get(
-      ['enabled', 'sensitivity', 'visualFeedback', 'autoAdapt'],
+      ['enabled', 'sensitivity', 'visualFeedback', 'autoAdapt', 'userTremorPattern'],
       function (result) {
         console.log('⚙️ Settings loaded:', result);
         isEnabled = result.enabled !== false;
         sensitivity = result.sensitivity || 3;
         visualFeedback = result.visualFeedback !== false;
         autoAdapt = result.autoAdapt !== false;
+        userTremorPattern = result.userTremorPattern || { severity: 'unknown', frequency: 0, amplitude: 0 };
 
         if (isEnabled) {
           console.log('✅ Assistance enabled, attaching listeners');
+          console.log('📊 Learned tremor pattern:', userTremorPattern);
           attachListeners();
         } else {
           console.log('❌ Assistance disabled');
@@ -106,8 +112,10 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
         break;
 
       case 'RESET_LEARNING':
-        stats = { assistCount: 0, clickCount: 0, confidenceLevel: 0 };
+        stats = { assistCount: 0, clickCount: 0, confidenceLevel: 0, successfulClicks: 0, missedClicks: 0 };
+        userTremorPattern = { severity: 'unknown', frequency: 0, amplitude: 0 };
         cursorHistory = [];
+        chrome.storage.local.set({ userTremorPattern: userTremorPattern });
         clearAllAssistance();
         break;
     }
@@ -175,17 +183,25 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     if (!isEnabled) return;
 
     stats.clickCount++;
+    const element = e.target || assistedElement;
 
-    // Increase confidence when successful click
-    stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
+    // Check if click hit the intended target (successful)
+    if (element && isInteractiveElement(element)) {
+      stats.successfulClicks++;
+      // Increase confidence when successful click
+      stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
+    } else {
+      stats.missedClicks++;
+      // Reduce confidence on missed click
+      stats.confidenceLevel = Math.max(0, stats.confidenceLevel - 3);
+    }
 
-    // Clear assistance immediately after successful click
-    const element = e.target;
-    if (element.hasAttribute('data-steady-assist')) {
+    // Clear assistance immediately after click
+    if (element && element.hasAttribute('data-steady-assist')) {
       clearTimeout(hesitationTimer);
       setTimeout(() => {
         clearAssistanceForElement(element);
-      }, 200); // Quick restore after click
+      }, 200);
     }
 
     updateStats();
@@ -196,19 +212,31 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     const recent = cursorHistory.slice(-3);
     const speed = calculateSpeed(recent);
+    const currentPos = recent[recent.length - 1];
+
+    // Analyze tremor patterns from cursor history
+    const tremorData = analyzeTremorPatternML(cursorHistory);
+    
+    // Update learned tremor pattern periodically
+    if (stats.clickCount % 5 === 0 && tremorData.severity !== 'unknown') {
+      userTremorPattern = tremorData;
+      chrome.storage.local.set({ userTremorPattern: userTremorPattern });
+    }
 
     // Detect slow/hesitant movement
     if (speed < config.speedThreshold) {
-      const nearbyTargets = findNearbyInteractiveElements(
-        recent[recent.length - 1]
-      );
+      const nearbyTargets = findNearbyInteractiveElements(currentPos);
 
       if (nearbyTargets.length > 0) {
-        // Predict which target they're aiming for
-        const predictedTarget = predictIntendedTarget(nearbyTargets, recent);
+        // ML-based prediction using cursor history
+        const predictedTarget = predictIntendedTargetML(cursorHistory, nearbyTargets);
 
         if (predictedTarget) {
           applyAssistance(predictedTarget, 'predicted');
+          assistedElement = predictedTarget;
+          
+          // Apply snap-to-target if cursor is within snap radius
+          applySnapToTarget(predictedTarget, currentPos, tremorData);
         }
       }
     }
@@ -352,18 +380,36 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     return nearby;
   }
 
-  function predictIntendedTarget(targets, cursorPath) {
-    // Simple prediction: closest to cursor trajectory
+  // ML-based prediction using cursor trajectory
+  function predictIntendedTargetML(cursorHistory, targets) {
     if (targets.length === 0) return null;
     if (targets.length === 1) return targets[0];
 
-    // TODO: Implement ML-based prediction here
-    // For now, return the largest interactive element (easier to click)
-    return targets.reduce((largest, current) => {
-      const currentArea = current.offsetWidth * current.offsetHeight;
-      const largestArea = largest.offsetWidth * largest.offsetHeight;
-      return currentArea > largestArea ? current : largest;
-    });
+    if (cursorHistory.length < 3) {
+      return targets[0];
+    }
+
+    // Calculate cursor velocity and direction
+    const velocity = calculateVelocityML(cursorHistory);
+    const direction = calculateDirectionML(cursorHistory);
+
+    // Project cursor path forward
+    const projectedPath = projectCursorPathML(cursorHistory, direction, 150);
+
+    // Score each target
+    const scored = targets.map(element => ({
+      element: element,
+      score: scoreTargetML(element, cursorHistory, velocity, direction),
+    }));
+
+    // Return highest scoring target
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0].element;
+  }
+
+  function predictIntendedTarget(targets, cursorPath) {
+    // Fallback to ML-based prediction
+    return predictIntendedTargetML(cursorHistory, targets);
   }
 
   function calculateSpeed(positions) {
@@ -401,5 +447,195 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     });
   }
 
-  console.log('Steady Assist: Ready');
+  // ==================== ML HELPER FUNCTIONS ====================
+
+  function calculateVelocityML(cursorHistory) {
+    if (cursorHistory.length < 2) return 0;
+
+    const recent = cursorHistory.slice(-5);
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+
+    const distance = Math.sqrt(
+      Math.pow(last.x - first.x, 2) + Math.pow(last.y - first.y, 2)
+    );
+
+    const time = (last.timestamp - first.timestamp) / 1000;
+    return time > 0 ? distance / time : 0;
+  }
+
+  function calculateDirectionML(cursorHistory) {
+    if (cursorHistory.length < 2) return { angle: 0, dx: 0, dy: 0 };
+
+    const recent = cursorHistory.slice(-3);
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+
+    const dx = last.x - first.x;
+    const dy = last.y - first.y;
+    const angle = Math.atan2(dy, dx);
+
+    return { angle, dx, dy };
+  }
+
+  function projectCursorPathML(cursorHistory, direction, distance) {
+    const last = cursorHistory[cursorHistory.length - 1];
+    const points = [];
+
+    for (let i = 0; i <= distance; i += 10) {
+      points.push({
+        x: last.x + Math.cos(direction.angle) * i,
+        y: last.y + Math.sin(direction.angle) * i,
+      });
+    }
+
+    return points;
+  }
+
+  function scoreTargetML(element, cursorHistory, velocity, direction) {
+    let score = 0;
+    const rect = element.getBoundingClientRect();
+    const last = cursorHistory[cursorHistory.length - 1];
+
+    // Distance score (closer is better) - weight: 40%
+    const center = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+    const distance = Math.sqrt(
+      Math.pow(last.x - center.x, 2) + Math.pow(last.y - center.y, 2)
+    );
+    score += Math.max(0, 100 - distance) * 0.4;
+
+    // Size score (larger buttons easier to hit) - weight: 20%
+    const area = rect.width * rect.height;
+    score += Math.min(50, area / 100) * 0.2;
+
+    // Alignment score (is cursor moving toward it?) - weight: 40%
+    const targetAngle = Math.atan2(center.y - last.y, center.x - last.x);
+    const angleDiff = Math.abs(targetAngle - direction.angle);
+    score += Math.max(0, 50 - angleDiff * 10) * 0.4;
+
+    return score;
+  }
+
+  function analyzeTremorPatternML(cursorHistory) {
+    if (cursorHistory.length < 10) {
+      return { severity: 'unknown', frequency: 0, amplitude: 0 };
+    }
+
+    const microMovements = detectMicroMovementsML(cursorHistory);
+    const frequency = calculateTremorFrequencyML(microMovements);
+    const amplitude = calculateTremorAmplitudeML(microMovements);
+
+    let severity = 'none';
+    if (amplitude > 5 && frequency > 3) severity = 'severe';
+    else if (amplitude > 3 && frequency > 2) severity = 'moderate';
+    else if (amplitude > 1 && frequency > 1) severity = 'mild';
+
+    return { severity, frequency, amplitude, pattern: microMovements };
+  }
+
+  function detectMicroMovementsML(cursorHistory) {
+    const movements = [];
+
+    for (let i = 1; i < cursorHistory.length; i++) {
+      const prev = cursorHistory[i - 1];
+      const curr = cursorHistory[i];
+
+      const distance = Math.sqrt(
+        Math.pow(curr.x - prev.x, 2) + Math.pow(curr.y - prev.y, 2)
+      );
+
+      const timeDelta = curr.timestamp - prev.timestamp;
+
+      if (distance > 0 && distance < 10 && timeDelta < 100) {
+        movements.push({ distance, timeDelta, timestamp: curr.timestamp });
+      }
+    }
+
+    return movements;
+  }
+
+  function calculateTremorFrequencyML(microMovements) {
+    if (microMovements.length < 2) return 0;
+
+    const recent = microMovements.filter(
+      m => Date.now() - m.timestamp < 1000
+    );
+
+    return recent.length;
+  }
+
+  function calculateTremorAmplitudeML(microMovements) {
+    if (microMovements.length === 0) return 0;
+
+    const distances = microMovements.map(m => m.distance);
+    const avg = distances.reduce((a, b) => a + b, 0) / distances.length;
+
+    return avg;
+  }
+
+  function willClickMissML(cursorPos, targetElement, tremorData) {
+    const rect = targetElement.getBoundingClientRect();
+    const center = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+
+    const distance = Math.sqrt(
+      Math.pow(cursorPos.x - center.x, 2) +
+        Math.pow(cursorPos.y - center.y, 2)
+    );
+
+    const threshold =
+      tremorData.severity === 'severe'
+        ? 30
+        : tremorData.severity === 'moderate'
+          ? 20
+          : 10;
+
+    return distance > threshold;
+  }
+
+  function applySnapToTarget(targetElement, cursorPos, tremorData) {
+    if (!targetElement || !visualFeedback) return;
+
+    const rect = targetElement.getBoundingClientRect();
+    const distance = Math.sqrt(
+      Math.pow(cursorPos.x - (rect.left + rect.width / 2), 2) +
+        Math.pow(cursorPos.y - (rect.top + rect.height / 2), 2)
+    );
+
+    // Only snap if within 20px radius
+    const snapRadius = 20;
+    if (distance <= snapRadius) {
+      const center = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+
+      // Calculate snap offset (5-10px based on tremor severity)
+      const snapStrength =
+        tremorData.severity === 'severe'
+          ? 0.5
+          : tremorData.severity === 'moderate'
+            ? 0.35
+            : 0.2;
+
+      const dx = center.x - cursorPos.x;
+      const dy = center.y - cursorPos.y;
+
+      const snapOffset = {
+        x: dx * snapStrength,
+        y: dy * snapStrength,
+      };
+
+      // Apply subtle visual nudge effect
+      targetElement.style.transform = `translate(${snapOffset.x * 0.3}px, ${snapOffset.y * 0.3}px)`;
+      targetElement.setAttribute('data-snap-active', 'true');
+    }
+  }
+
+  console.log('Steady Assist: Ready with AI Cursor Prediction');
 })();

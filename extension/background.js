@@ -14,6 +14,13 @@ chrome.runtime.onInstalled.addListener(() => {
       assistCount: 0,
       clickCount: 0,
       confidenceLevel: 0,
+      successfulClicks: 0,
+      missedClicks: 0,
+    },
+    userTremorPattern: {
+      severity: 'unknown',
+      frequency: 0,
+      amplitude: 0,
     },
     userPatterns: {},
   });
