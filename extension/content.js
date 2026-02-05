@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v9';
+const STEADY_ASSIST_BUILD = 'v10';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -317,15 +317,13 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     element.style.paddingBottom = `${metrics.bottom + cappedPadding}px`;
     element.style.paddingLeft = `${metrics.left + cappedPadding}px`;
 
-    // Scale font size with area (sqrt factor) for readability
-    const currentFontSize = parseFloat(metrics.fontSize) || 0;
-    if (currentFontSize) {
-      const fontScale = Math.min(
-        sizeScale,
-        1 + cappedPadding / Math.max(1, Math.min(metrics.width, metrics.height))
-      );
-      element.style.fontSize = `${currentFontSize * fontScale}px`;
-    }
+    // Scale the whole button so text grows with it
+    const scaleFactor = Math.min(
+      sizeScale,
+      1 + cappedPadding / Math.max(1, Math.min(metrics.width, metrics.height))
+    );
+    element.style.transformOrigin = 'center';
+    element.style.transform = `scale(${scaleFactor})`;
   }
 
   function attachExitListeners(element) {
@@ -378,9 +376,13 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     if (metrics) {
       element.style.padding = metrics.padding;
       element.style.fontSize = metrics.fontSize;
+      element.style.transform = metrics.transform;
+      element.style.transformOrigin = metrics.transformOrigin;
     } else {
       element.style.padding = '';
       element.style.fontSize = '';
+      element.style.transform = '';
+      element.style.transformOrigin = '';
     }
 
     // Remove highlight
@@ -422,6 +424,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       metrics = {
         padding: styles.padding,
         fontSize: styles.fontSize,
+        transform: styles.transform,
+        transformOrigin: styles.transformOrigin,
         top: parseFloat(styles.paddingTop) || 0,
         right: parseFloat(styles.paddingRight) || 0,
         bottom: parseFloat(styles.paddingBottom) || 0,
