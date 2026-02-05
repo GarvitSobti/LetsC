@@ -9,8 +9,13 @@
   <body>
     <div class="container">
       <header>
-        <h1>Steady Assist</h1>
-        <p class="tagline">Making the web easier to navigate</p>
+        <div class="header-top">
+          <div>
+            <h1>Steady Assist</h1>
+            <p class="tagline">Making the web easier to navigate</p>
+          </div>
+          <button class="help-btn" id="helpBtn" title="Show tutorial">?</button>
+        </div>
       </header>
 
       <main>
@@ -23,6 +28,41 @@
               <span class="toggle-slider"></span>
             </div>
           </label>
+        </div>
+
+        <div class="toggle-section">
+          <label class="toggle-label">
+            <span class="toggle-text">Motor Impaired Mode</span>
+            <div class="toggle-wrapper">
+              <input type="checkbox" id="motorImpaired" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+        </div>
+
+        <div class="toggle-section">
+          <label class="toggle-label">
+            <span class="toggle-text">Visually Impaired Mode</span>
+            <div class="toggle-wrapper">
+              <input type="checkbox" id="visualImpaired" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+        </div>
+
+        <div class="toggle-section">
+          <label class="toggle-label" for="visualImpairedScale">
+            <span class="toggle-text">Visual Size Increase</span>
+          </label>
+          <input
+            type="range"
+            id="visualImpairedScale"
+            min="1"
+            max="2"
+            step="0.1"
+            value="2"
+          />
+          <span class="setting-value" id="visualImpairedScaleValue">2.0x</span>
         </div>
 
         <!-- Status Indicator -->
@@ -80,6 +120,62 @@
         <div class="actions">
           <button class="btn-secondary" id="resetBtn">Reset Learning</button>
         </div>
+
+        <!-- Demo Mode Controls -->
+        <details class="demo-section">
+          <summary>Demo Mode</summary>
+          <div class="settings-content">
+            <div class="setting-item">
+              <label for="demoToggle">
+                <input type="checkbox" id="demoToggle" />
+                Demo Mode (simulate tremor)
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <label for="simulateTremor">
+                <input type="checkbox" id="simulateTremor" checked />
+                Simulate Tremor
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <label for="tremorSeverity">Tremor Severity</label>
+              <input
+                type="range"
+                id="tremorSeverity"
+                min="1"
+                max="3"
+                value="2"
+              />
+              <span class="setting-value" id="tremorSeverityValue"
+                >Moderate</span
+              >
+            </div>
+
+            <div class="setting-item">
+              <button class="btn-secondary" id="demoRunBtn">
+                Auto-run Demo
+              </button>
+              <button
+                class="btn-secondary"
+                id="demoPauseBtn"
+                style="display: none"
+              >
+                Pause
+              </button>
+              <button class="btn-secondary" id="demoOnceBtn">
+                Simulate Once
+              </button>
+            </div>
+
+            <div class="setting-item">
+              <label for="demoSpeed">Playback Speed</label>
+              <input type="range" id="demoSpeed" min="1" max="5" value="4" />
+              <span class="setting-value" id="demoSpeedValue">1x</span>
+            </div>
+          </div>
+        </details>
       </main>
 
       <footer>

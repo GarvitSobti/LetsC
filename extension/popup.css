@@ -19,8 +19,18 @@ body {
 
 /* Header */
 header {
-  text-align: center;
   margin-bottom: 24px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.header-top > div {
+  flex: 1;
 }
 
 h1 {
@@ -28,11 +38,36 @@ h1 {
   font-weight: 700;
   color: #0f172a;
   margin-bottom: 4px;
+  text-align: left;
 }
 
 .tagline {
   font-size: 14px;
   color: #64748b;
+  text-align: left;
+}
+
+.help-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  background: white;
+  color: #3b82f6;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.help-btn:hover {
+  background: #3b82f6;
+  color: white;
+  transform: scale(1.1);
 }
 
 /* Main Toggle */
