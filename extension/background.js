@@ -24,12 +24,6 @@ chrome.runtime.onInstalled.addListener(details => {
       tutorialCompleted: false,
       showTutorialOnNextPage: true,
     });
-
-    // Open a simple page to run tutorial
-    chrome.tabs.create({
-      url: 'https://www.google.com',
-      active: true,
-    });
   }
 });
 

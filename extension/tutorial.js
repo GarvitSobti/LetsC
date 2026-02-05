@@ -707,7 +707,7 @@ Happy browsing!`,
         setTimeout(() => {
           startTutorial();
           chrome.storage.local.set({ showTutorialOnNextPage: false });
-        }, 1500);
+        }, 2500);
       }
     }
   );
