@@ -339,15 +339,21 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   // Helper functions
 
   function isInteractiveElement(element) {
-    const tagName = element.tagName.toLowerCase();
-    const interactive = ['a', 'button', 'input', 'select', 'textarea'];
+    return isButtonElement(element);
+  }
 
-    return (
-      interactive.includes(tagName) ||
-      element.onclick !== null ||
-      element.getAttribute('role') === 'button' ||
-      window.getComputedStyle(element).cursor === 'pointer'
-    );
+  function isButtonElement(element) {
+    if (!element || !element.tagName) return false;
+    const tagName = element.tagName.toLowerCase();
+
+    if (tagName === 'button') return true;
+
+    if (tagName === 'input') {
+      const type = (element.getAttribute('type') || '').toLowerCase();
+      return type === 'button' || type === 'submit' || type === 'reset';
+    }
+
+    return false;
   }
 
   function findNearbyInteractiveElements(position) {
