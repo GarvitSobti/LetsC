@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v22';
+const STEADY_ASSIST_BUILD = 'v30';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -160,7 +160,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         break;
 
       case 'UPDATE_VISUAL_IMPAIRED_SCALE':
-        visualImpairedScale = request.value || 2;
+        visualImpairedScale = Math.min(2, request.value || 2);
         clearAllAssistance();
         break;
 
@@ -184,24 +184,26 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     );
     let hoveredButton = getButtonLikeElement(hoveredNow);
 
-    if (!hoveredButton) {
-      hoveredButton = findButtonNearCursor(
-        lastMousePos.x,
-        lastMousePos.y,
-        magneticRadiusPx,
-        magneticSampleStep
-      );
-    }
+    if (motorImpaired) {
+      if (!hoveredButton) {
+        hoveredButton = findButtonNearCursor(
+          lastMousePos.x,
+          lastMousePos.y,
+          magneticRadiusPx,
+          magneticSampleStep
+        );
+      }
 
-    // Magnetic assist: only for motor-impaired mode
-    if (!hoveredButton && motorImpaired) {
-      const magneticButton = findClosestButtonWithinRadius(
-        lastMousePos.x,
-        lastMousePos.y,
-        magneticRadiusPx
-      );
-      if (magneticButton) {
-        hoveredButton = magneticButton;
+      // Magnetic assist: only for motor-impaired mode
+      if (!hoveredButton) {
+        const magneticButton = findClosestButtonWithinRadius(
+          lastMousePos.x,
+          lastMousePos.y,
+          magneticRadiusPx
+        );
+        if (magneticButton) {
+          hoveredButton = magneticButton;
+        }
       }
     }
 
@@ -366,18 +368,31 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Apply visual and functional assistance
     element.classList.add('steady-assist-active');
-    if (visualImpaired) {
+    const activeMode = motorImpaired ? 'motor' : visualImpaired ? 'visual' : null;
+    if (activeMode === 'motor') {
+      element.classList.add('steady-assist-motor');
+      element.classList.add('steady-assist-lock');
+    } else if (activeMode === 'visual') {
+      element.classList.add('steady-assist-visual');
       element.classList.add('steady-assist-lock');
     }
 
     // Lock font size so label doesn't change independently
     const metrics = getOriginalMetrics(element);
     if (metrics && metrics.fontSize) {
-      element.style.fontSize = metrics.fontSize;
+      if (activeMode === 'visual') {
+        const baseSize = parseFloat(metrics.fontSize) || 0;
+        if (baseSize > 0) {
+          element.style.fontSize = `${baseSize * visualImpairedScale}px`;
+        }
+      } else {
+        element.style.fontSize = metrics.fontSize;
+      }
     }
+    // Do not override transforms to avoid breaking site-specific styles
 
     // Expand clickable area
-    expandClickArea(element);
+    expandClickArea(element, activeMode);
 
     // Simplify surrounding area (disabled per request)
 
@@ -409,10 +424,15 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     }, 1500); // Faster restore when idle
   }
 
-  function expandClickArea(element) {
-    // Increase padding for layout shift and scale for child growth
+  function expandClickArea(element, activeMode) {
+    // Increase padding for layout shift (no transform to avoid mirroring)
     const metrics = getOriginalMetrics(element);
-    const sizeScale = visualImpaired ? visualImpairedScale : 2;
+    const sizeScale =
+      activeMode === 'motor'
+        ? 1.5
+        : activeMode === 'visual'
+          ? Math.min(2, visualImpairedScale)
+          : 2;
     const maxAdd =
       (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
     const additionalPadding = maxAdd;
@@ -422,8 +442,13 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     element.style.paddingBottom = `${metrics.bottom + additionalPadding}px`;
     element.style.paddingLeft = `${metrics.left + additionalPadding}px`;
 
-    element.style.transformOrigin = 'center';
-    element.style.transform = `scale(${sizeScale})`;
+    if (activeMode === 'visual') {
+      element.style.minHeight = `${metrics.height * sizeScale}px`;
+      element.style.minWidth = `${metrics.width * sizeScale}px`;
+    }
+
+    element.style.removeProperty('transform');
+    element.style.removeProperty('transform-origin');
   }
 
   function attachExitListeners(element) {
@@ -475,14 +500,14 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     const metrics = originalMetrics.get(element);
     if (metrics) {
       element.style.padding = metrics.padding;
-      element.style.transform = metrics.transform;
-      element.style.transformOrigin = metrics.transformOrigin;
       element.style.fontSize = metrics.fontSize;
+      element.style.minHeight = '';
+      element.style.minWidth = '';
     } else {
       element.style.padding = '';
-      element.style.transform = '';
-      element.style.transformOrigin = '';
       element.style.fontSize = '';
+      element.style.minHeight = '';
+      element.style.minWidth = '';
     }
 
     // Remove highlight
@@ -499,6 +524,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     element.removeAttribute('data-steady-exit-listener');
     element.classList.remove('steady-assist-active');
     element.classList.remove('steady-assist-lock');
+    element.classList.remove('steady-assist-motor');
+    element.classList.remove('steady-assist-visual');
     if (activeAssistedElement === element) {
       activeAssistedElement = null;
     }
@@ -525,8 +552,6 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       metrics = {
         padding: styles.padding,
         fontSize: styles.fontSize,
-        transform: styles.transform,
-        transformOrigin: styles.transformOrigin,
         top: parseFloat(styles.paddingTop) || 0,
         right: parseFloat(styles.paddingRight) || 0,
         bottom: parseFloat(styles.paddingBottom) || 0,
@@ -547,7 +572,6 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       .steady-assist-active * {
         font-size: inherit !important;
         line-height: inherit !important;
-        transform: none !important;
       }
       .steady-assist-lock {
         pointer-events: auto !important;
