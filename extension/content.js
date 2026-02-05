@@ -182,21 +182,25 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function handleMouseOut(e) {
-    if (!isEnabled) return;
+    try {
+      if (!isEnabled) return;
 
-    const element = e.target;
+      const element = e.target;
 
-    // Clear hesitation timer when mouse leaves
-    if (element === currentTarget) {
-      clearTimeout(hesitationTimer);
-      currentTarget = null;
-      isHesitating = false;
+      // Clear hesitation timer when mouse leaves
+      if (element === currentTarget) {
+        clearTimeout(hesitationTimer);
+        currentTarget = null;
+        isHesitating = false;
 
-      // Restore element if it was assisted
-      if (element.hasAttribute('data-steady-assist')) {
-        setTimeout(() => {
-          graduallyRestoreUI(element);
-        }, 500); // Small delay to check if click happened
+        // Restore element immediately if it was assisted
+        if (element.hasAttribute('data-steady-assist')) {
+          clearAssistanceForElement(element);
+        }
+      }
+    } catch (error) {
+      if (!error.message.includes('context invalidated')) {
+        console.error('Error in handleMouseOut:', error);
       }
     }
   }
@@ -350,15 +354,13 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function expandClickArea(element) {
-    // Aggressively expand element to make it impossible to miss
+    // Subtly expand to help with clicking, but don't transform/scale
     const currentPadding = parseInt(window.getComputedStyle(element).padding) || 0;
-    const additionalPadding = 20 + (sensitivity * 5); // Much more aggressive: 20-45px
+    const additionalPadding = 8 + (sensitivity * 2); // Subtle: 8-18px
 
     element.style.padding = `${currentPadding + additionalPadding}px`;
-    element.style.transform = 'scale(1.15)'; // Slightly enlarge
-    element.style.transition = 'all 0.2s ease'; // Smooth animation
+    element.style.transition = 'all 0.15s ease'; // Smooth but quick
     element.setAttribute('data-original-padding', currentPadding);
-    element.setAttribute('data-original-transform', element.style.transform);
   }
 
   function simplifySurroundings(element) {
@@ -423,16 +425,16 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function addVisualHighlight(element) {
-    // Add BRIGHT, obvious glow effect
-    element.style.boxShadow = '0 0 0 8px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.6)';
-    element.style.outline = '3px solid #3b82f6';
-    element.style.outlineOffset = '2px';
-    element.style.backgroundColor = element.style.backgroundColor || 'rgba(59, 130, 246, 0.1)';
+    // Bright, obvious glow to make button "pop out" visually
+    element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.9), 0 0 15px rgba(59, 130, 246, 0.7)';
+    element.style.outline = '2px solid #3b82f6';
+    element.style.outlineOffset = '1px';
+    element.style.transition = 'all 0.15s ease';
   }
 
   function graduallyRestoreUI(element) {
-    // Gradually restore original UI
-    element.style.transition = 'all 0.4s ease';
+    // Immediately restore original UI
+    element.style.transition = 'all 0.15s ease';
 
     // Restore padding
     const originalPadding = element.getAttribute('data-original-padding');
@@ -440,11 +442,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       element.style.padding = `${originalPadding}px`;
     }
 
-    // Restore transform
-    element.style.transform = '';
-    element.removeAttribute('data-original-transform');
-
-    // Remove all highlights
+    // Remove all highlights immediately
     element.style.boxShadow = '';
     element.style.outline = '';
     element.style.outlineOffset = '';
