@@ -146,6 +146,7 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     if (!isEnabled) return;
 
     const element = e.target;
+    console.log('🖱️ MOUSEOVER:', element.tagName, '| isInteractive:', isInteractiveElement(element), '| sensitivity:', sensitivity);
 
     // Check if element is interactive
     if (isInteractiveElement(element)) {
@@ -158,9 +159,12 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       
       // Start hesitation timer
       clearTimeout(hesitationTimer);
+      const hesitationTime = config.hesitationThreshold / sensitivity;
+      console.log('⏱️ HESITATION TIMER SET for', hesitationTime + 'ms on', element.tagName);
+      
       hesitationTimer = setTimeout(() => {
         detectHesitation(element);
-      }, config.hesitationThreshold / sensitivity);
+      }, hesitationTime);
     }
   }
 
@@ -267,13 +271,20 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   function detectHesitation(element) {
     if (!isEnabled || !element) return;
 
+    console.log('😰 HESITATION DETECTED on', element.tagName, '| visualFeedback:', visualFeedback);
     isHesitating = true;
     applyAssistance(element, 'hesitation');
   }
 
   function applyAssistance(element, reason) {
-    if (!visualFeedback) return;
-    if (!element) return;
+    if (!visualFeedback) {
+      console.log('❌ VISUAL FEEDBACK DISABLED - Not applying assistance');
+      return;
+    }
+    if (!element) {
+      console.log('❌ NO ELEMENT - Cannot apply assistance');
+      return;
+    }
 
     console.log('🎯 ASSISTANCE APPLIED - element:', element.tagName, 'reason:', reason);
 
