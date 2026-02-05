@@ -10,6 +10,9 @@ chrome.runtime.onInstalled.addListener(() => {
     sensitivity: 3,
     visualFeedback: true,
     autoAdapt: true,
+    motorImpaired: false,
+    visualImpaired: false,
+    visualImpairedScale: 2,
     stats: {
       assistCount: 0,
       clickCount: 0,

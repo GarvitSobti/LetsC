@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v19';
+const STEADY_ASSIST_BUILD = 'v22';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -15,6 +15,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   let sensitivity = 3;
   let visualFeedback = true;
   let autoAdapt = true;
+  let motorImpaired = false;
+  let visualImpaired = false;
+  let visualImpairedScale = 2;
 
   // Cursor tracking
   let cursorHistory = [];
@@ -56,13 +59,24 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Load settings
     chrome.storage.local.get(
-      ['enabled', 'sensitivity', 'visualFeedback', 'autoAdapt'],
+      [
+        'enabled',
+        'sensitivity',
+        'visualFeedback',
+        'autoAdapt',
+        'motorImpaired',
+        'visualImpaired',
+        'visualImpairedScale',
+      ],
       function (result) {
         console.log('⚙️ Settings loaded:', result);
         isEnabled = result.enabled !== false;
         sensitivity = result.sensitivity || 3;
         visualFeedback = result.visualFeedback !== false;
         autoAdapt = result.autoAdapt !== false;
+        motorImpaired = result.motorImpaired === true;
+        visualImpaired = result.visualImpaired === true;
+        visualImpairedScale = result.visualImpairedScale || 2;
 
         if (isEnabled) {
           console.log('✅ Assistance enabled, attaching listeners');
@@ -123,6 +137,33 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         }
         break;
 
+      case 'UPDATE_MOTOR_IMPAIRED':
+        motorImpaired = request.enabled;
+        if (!motorImpaired) {
+          clearTimeout(hesitationTimer);
+          clearTimeout(inactivityTimer);
+          isHesitating = false;
+          currentTarget = null;
+          clearAllAssistance();
+        }
+        break;
+
+      case 'UPDATE_VISUAL_IMPAIRED':
+        visualImpaired = request.enabled;
+        if (!visualImpaired) {
+          clearTimeout(hesitationTimer);
+          clearTimeout(inactivityTimer);
+          isHesitating = false;
+          currentTarget = null;
+          clearAllAssistance();
+        }
+        break;
+
+      case 'UPDATE_VISUAL_IMPAIRED_SCALE':
+        visualImpairedScale = request.value || 2;
+        clearAllAssistance();
+        break;
+
       case 'RESET_LEARNING':
         stats = { assistCount: 0, clickCount: 0, confidenceLevel: 0 };
         cursorHistory = [];
@@ -133,6 +174,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function handleMouseMove(e) {
     if (!isEnabled) return;
+    if (!motorImpaired && !visualImpaired) return;
 
     lastMousePos = { x: e.clientX, y: e.clientY };
 
@@ -151,8 +193,8 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
       );
     }
 
-    // Magnetic assist: only if we don't already have a direct hover target
-    if (!hoveredButton) {
+    // Magnetic assist: only for motor-impaired mode
+    if (!hoveredButton && motorImpaired) {
       const magneticButton = findClosestButtonWithinRadius(
         lastMousePos.x,
         lastMousePos.y,
@@ -224,6 +266,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function handleMouseOver(e) {
     if (!isEnabled) return;
+    if (!motorImpaired && !visualImpaired) return;
 
     const element = getButtonLikeElement(e.target);
     if (!element) return;
@@ -242,6 +285,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function handleMouseOut(e) {
     if (!isEnabled) return;
+    if (!motorImpaired && !visualImpaired) return;
 
     const element = getButtonLikeElement(e.target);
     if (!element) return;
@@ -282,6 +326,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   }
 
   function analyzeCursorBehavior() {
+    if (!motorImpaired && !visualImpaired) return;
     if (cursorHistory.length < 3) return;
 
     const recent = cursorHistory.slice(-3);
@@ -313,6 +358,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function applyAssistance(element, reason) {
     if (!visualFeedback) return;
+    if (!motorImpaired && !visualImpaired) return;
 
     // Mark element as assisted
     element.setAttribute('data-steady-assist', reason);
@@ -320,6 +366,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
     // Apply visual and functional assistance
     element.classList.add('steady-assist-active');
+    if (visualImpaired) {
+      element.classList.add('steady-assist-lock');
+    }
 
     // Lock font size so label doesn't change independently
     const metrics = getOriginalMetrics(element);
@@ -361,10 +410,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   }
 
   function expandClickArea(element) {
-    // Increase padding so label + icon stay together within the button
+    // Increase padding for layout shift and scale for child growth
     const metrics = getOriginalMetrics(element);
-    // Cap to 2x width/height => scale factor 2
-    const sizeScale = 2;
+    const sizeScale = visualImpaired ? visualImpairedScale : 2;
     const maxAdd =
       (Math.min(metrics.width, metrics.height) * (sizeScale - 1)) / 2;
     const additionalPadding = maxAdd;
@@ -373,6 +421,9 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     element.style.paddingRight = `${metrics.right + additionalPadding}px`;
     element.style.paddingBottom = `${metrics.bottom + additionalPadding}px`;
     element.style.paddingLeft = `${metrics.left + additionalPadding}px`;
+
+    element.style.transformOrigin = 'center';
+    element.style.transform = `scale(${sizeScale})`;
   }
 
   function attachExitListeners(element) {
@@ -447,6 +498,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     element.removeAttribute('data-steady-assist');
     element.removeAttribute('data-steady-exit-listener');
     element.classList.remove('steady-assist-active');
+    element.classList.remove('steady-assist-lock');
     if (activeAssistedElement === element) {
       activeAssistedElement = null;
     }
@@ -496,6 +548,13 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
         font-size: inherit !important;
         line-height: inherit !important;
         transform: none !important;
+      }
+      .steady-assist-lock {
+        pointer-events: auto !important;
+      }
+      .steady-assist-lock * {
+        pointer-events: none !important;
+        user-select: none !important;
       }
     `;
     document.head.appendChild(style);
