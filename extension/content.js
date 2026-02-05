@@ -21,10 +21,12 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   let isHesitating = false;
 
   // Stats
+
   let stats = {
     assistCount: 0,
     clickCount: 0,
     confidenceLevel: 0,
+    misclickCount: 0,
   };
 
   // Configuration
@@ -181,12 +183,34 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
     // Clear assistance immediately after successful click
     const element = e.target;
-    if (element.hasAttribute('data-steady-assist')) {
-      clearTimeout(hesitationTimer);
-      setTimeout(() => {
-        clearAssistanceForElement(element);
-      }, 200); // Quick restore after click
+    const clickedElement = e.target;
+
+    // Walk up the DOM tree from the clicked node to see if any ancestor is interactive.
+    let node = clickedElement;
+    let foundInteractive = false;
+    while (node && node !== document.documentElement) {
+      try {
+        if (isInteractiveElement(node)) {
+          foundInteractive = true;
+          break;
+        }
+      } catch (err) {
+        // defensive: if node is a text node or similar, move to parent
+      }
+      node = node.parentElement;
     }
+
+    if (!foundInteractive) {
+      // Count as a mis-click
+      stats.misclickCount = (stats.misclickCount || 0) + 1;
+    }
+
+    // if (element.hasAttribute('data-steady-assist')) {
+    //   clearTimeout(hesitationTimer);
+    //   setTimeout(() => {
+    //     clearAssistanceForElement(element);
+    //   }, 200); // Quick restore after click
+    // }
 
     updateStats();
   }
