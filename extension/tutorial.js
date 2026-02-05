@@ -13,26 +13,26 @@
     {
       id: 'welcome',
       title: 'Welcome to Steady Assist! 👋',
-      message: 'We help people with motor challenges navigate the web more easily.\n\nWould you like a quick tour to see how it works?',
+      message: 'We make clicking buttons easier for you.\n\nWould you like to see how it works?\n\nThis will only take 1 minute.',
       buttons: [
-        { text: 'No Thanks', action: 'skip' },
-        { text: 'Show Me How', action: 'next', primary: true }
+        { text: 'Not Now', action: 'skip' },
+        { text: 'Yes, Show Me', action: 'next', primary: true }
       ]
     },
     {
       id: 'hover-demo',
-      title: '1. Hover Detection',
-      message: 'When you hover slowly over buttons, we detect hesitation.\n\nTry it: Hover over the blue button below.',
+      title: 'Step 1 of 3',
+      message: 'When you move your mouse slowly over a button,\nwe help you by making it bigger.\n\nTry it now: Move your mouse over this button.',
       showTestButton: true,
       buttons: [
-        { text: 'Skip Tutorial', action: 'skip' },
+        { text: 'Skip', action: 'skip' },
         { text: 'Next', action: 'next', primary: true, disabled: true }
       ]
     },
     {
       id: 'feedback',
-      title: '2. Visual Feedback',
-      message: 'Great! Did you see the button expand with a blue glow?\n\nThat\'s our assistance making it easier to click.',
+      title: 'Step 2 of 3',
+      message: 'Great job! 🎉\n\nDid you see the button get bigger?\n\nThat\'s Steady Assist helping you click more easily.',
       buttons: [
         { text: 'Back', action: 'back' },
         { text: 'Next', action: 'next', primary: true }
@@ -40,11 +40,11 @@
     },
     {
       id: 'settings',
-      title: '3. Control Panel',
-      message: 'Click the Steady Assist icon in your toolbar to:\n• Turn assistance on/off\n• Adjust sensitivity\n• View your stats',
+      title: 'Step 3 of 3',
+      message: 'You\'re all set! ✓\n\nSteady Assist is now working.\n\nTo turn it on or off, click the extension icon\nin your browser toolbar.',
       buttons: [
         { text: 'Back', action: 'back' },
-        { text: 'Finish', action: 'finish', primary: true }
+        { text: 'Done', action: 'finish', primary: true }
       ]
     }
   ];
@@ -268,13 +268,13 @@
     return true;
   });
 
-  // Auto-start on first install (with permission)
-  chrome.storage.local.get(['tutorialCompleted', 'showTutorialOnNextPage'], (result) => {
-    if (!result.tutorialCompleted && result.showTutorialOnNextPage) {
+  // Auto-start on first install - shows on current page
+  chrome.storage.local.get(['tutorialCompleted', 'showTutorial'], (result) => {
+    if (!result.tutorialCompleted && result.showTutorial) {
       setTimeout(() => {
         startTutorial();
-        chrome.storage.local.set({ showTutorialOnNextPage: false });
-      }, 1500);
+        chrome.storage.local.set({ showTutorial: false });
+      }, 2000); // 2 second delay so page loads first
     }
   });
 
