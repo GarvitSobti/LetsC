@@ -2,7 +2,7 @@
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
 console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
-const STEADY_ASSIST_BUILD = 'v3';
+const STEADY_ASSIST_BUILD = 'v4';
 console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
 (function () {
@@ -25,6 +25,7 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   const inactivityRestoreDelay = 800;
   let lastMousePos = { x: 0, y: 0 };
   let activeAssistedElement = null;
+  const originalMetrics = new WeakMap();
 
   // Stats
   let stats = {
@@ -302,69 +303,15 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
 
   function expandClickArea(element) {
     // Increase padding to make element easier to click
-    const styles = window.getComputedStyle(element);
+    const metrics = getOriginalMetrics(element);
     const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
-
-    let basePadding = null;
-    const originalPadding = element.getAttribute('data-original-padding');
-    if (originalPadding === null) {
-      element.setAttribute('data-original-padding', styles.padding);
-      const rect = element.getBoundingClientRect();
-      element.setAttribute('data-original-width', `${rect.width}`);
-      element.setAttribute('data-original-height', `${rect.height}`);
-      basePadding = {
-        top: parseFloat(styles.paddingTop) || 0,
-        right: parseFloat(styles.paddingRight) || 0,
-        bottom: parseFloat(styles.paddingBottom) || 0,
-        left: parseFloat(styles.paddingLeft) || 0,
-      };
-    } else {
-      const parts = originalPadding.split(' ');
-      const vals = parts.map(p => parseFloat(p) || 0);
-      if (vals.length === 1) {
-        basePadding = {
-          top: vals[0],
-          right: vals[0],
-          bottom: vals[0],
-          left: vals[0],
-        };
-      } else if (vals.length === 2) {
-        basePadding = {
-          top: vals[0],
-          right: vals[1],
-          bottom: vals[0],
-          left: vals[1],
-        };
-      } else if (vals.length === 3) {
-        basePadding = {
-          top: vals[0],
-          right: vals[1],
-          bottom: vals[2],
-          left: vals[1],
-        };
-      } else {
-        basePadding = {
-          top: vals[0] || 0,
-          right: vals[1] || 0,
-          bottom: vals[2] || 0,
-          left: vals[3] || 0,
-        };
-      }
-    }
-
-    const originalWidth = parseFloat(
-      element.getAttribute('data-original-width') || '0'
-    );
-    const originalHeight = parseFloat(
-      element.getAttribute('data-original-height') || '0'
-    );
-    const maxAdd = Math.min(originalWidth, originalHeight) / 2;
+    const maxAdd = Math.min(metrics.width, metrics.height) / 2;
     const cappedPadding = Math.min(additionalPadding, maxAdd);
 
-    element.style.paddingTop = `${basePadding.top + cappedPadding}px`;
-    element.style.paddingRight = `${basePadding.right + cappedPadding}px`;
-    element.style.paddingBottom = `${basePadding.bottom + cappedPadding}px`;
-    element.style.paddingLeft = `${basePadding.left + cappedPadding}px`;
+    element.style.paddingTop = `${metrics.top + cappedPadding}px`;
+    element.style.paddingRight = `${metrics.right + cappedPadding}px`;
+    element.style.paddingBottom = `${metrics.bottom + cappedPadding}px`;
+    element.style.paddingLeft = `${metrics.left + cappedPadding}px`;
   }
 
   function attachExitListeners(element) {
@@ -413,12 +360,11 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
     element.style.transition = 'all 0.8s ease';
 
     // Restore padding
-    const originalPadding = element.getAttribute('data-original-padding');
-    if (originalPadding !== null) {
-      element.style.padding = originalPadding;
-      element.removeAttribute('data-original-padding');
-      element.removeAttribute('data-original-width');
-      element.removeAttribute('data-original-height');
+    const metrics = originalMetrics.get(element);
+    if (metrics) {
+      element.style.padding = metrics.padding;
+    } else {
+      element.style.padding = '';
     }
 
     // Remove highlight
@@ -452,6 +398,24 @@ console.log(`-----working------${STEADY_ASSIST_BUILD}`);
   }
 
   // Helper functions
+  function getOriginalMetrics(element) {
+    let metrics = originalMetrics.get(element);
+    if (!metrics) {
+      const styles = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      metrics = {
+        padding: styles.padding,
+        top: parseFloat(styles.paddingTop) || 0,
+        right: parseFloat(styles.paddingRight) || 0,
+        bottom: parseFloat(styles.paddingBottom) || 0,
+        left: parseFloat(styles.paddingLeft) || 0,
+        width: rect.width,
+        height: rect.height,
+      };
+      originalMetrics.set(element, metrics);
+    }
+    return metrics;
+  }
 
   function isInteractiveElement(element) {
     return isButtonElement(element);
