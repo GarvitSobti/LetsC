@@ -2,7 +2,7 @@
 
 Thank you for contributing! Here's how to get started.
 
-## 🌿 Branch Naming Convention
+## Branch Naming Convention
 
 Use this format: `yourname/feature-description`
 
@@ -13,7 +13,7 @@ Examples:
 - `priya/mobile-responsive`
 - `amit/bug-fix-navbar`
 
-## 📝 Commit Message Guidelines
+## Commit Message Guidelines
 
 ### Format
 
@@ -45,7 +45,7 @@ docs: Update README with API documentation
 style: Format code according to style guide
 ```
 
-## 🔄 Pull Request Process
+## Pull Request Process
 
 1. **Create your branch**
 
@@ -82,7 +82,7 @@ style: Format code according to style guide
    - Merge using "Squash and Merge"
    - Delete your branch after merging
 
-## ✅ Code Review Checklist
+## Code Review Checklist
 
 Before requesting review, make sure:
 
@@ -93,7 +93,7 @@ Before requesting review, make sure:
 - [ ] No unnecessary files committed
 - [ ] Followed naming conventions
 
-## 🚫 What NOT to Do
+## What NOT to Do
 
 - Don't commit directly to `main`
 - Don't commit `node_modules/`
@@ -101,18 +101,18 @@ Before requesting review, make sure:
 - Don't push broken code
 - Don't force push (`git push -f`) unless you know what you're doing
 
-## 🆘 Need Help?
+## Need Help?
 
 - Ask in team chat
 - Tag teammates in GitHub comments
 - Check existing issues and PRs
 - Google is your friend!
 
-## 🎯 During Hackathon
+## During Hackathon
 
-**Speed matters, but quality still counts:**
+**Balance speed with quality:**
 
-- Quick reviews (< 30 min)
-- Focus on functionality first
-- Optimize later if time permits
-- Keep communicating!
+- Reviews should be completed within 30 minutes
+- Prioritize functionality over optimization
+- Optimize only if time permits
+- Maintain clear communication
