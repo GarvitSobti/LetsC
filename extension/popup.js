@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Chart instances
   let accuracyChart = null;
   let ratioChart = null;
+  let pollInterval = null;
 
   // Load saved settings
   chrome.storage.local.get(
@@ -34,10 +35,31 @@ document.addEventListener('DOMContentLoaded', function () {
         updateStats(result.stats);
         initializeCharts(result.stats);
       }
+
+      // Start polling for stats updates (fallback for message delivery)
+      startStatsPolling();
     }
   );
 
-  // Setup metrics tab switching
+  // Polling mechanism to catch stats updates
+  function startStatsPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    
+    let lastStats = null;
+    
+    pollInterval = setInterval(function() {
+      chrome.storage.local.get(['stats'], function(result) {
+        if (result.stats && JSON.stringify(result.stats) !== JSON.stringify(lastStats)) {
+          console.log('📊 Stats changed (from polling):', result.stats);
+          lastStats = result.stats;
+          statsCard.style.display = 'block';
+          metricsSection.style.display = 'block';
+          updateStats(result.stats);
+          updateCharts(result.stats);
+        }
+      });
+    }, 500); // Poll every 500ms
+  }
   const metricsTabs = document.querySelectorAll('.metrics-tab');
   metricsTabs.forEach((tab) => {
     tab.addEventListener('click', function () {
@@ -150,11 +172,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Listen for stats updates from content script
   chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.type === 'STATS_UPDATE') {
-      statsCard.style.display = 'block';
-      metricsSection.style.display = 'block';
-      updateStats(request.stats);
-      updateCharts(request.stats);
+    try {
+      if (request.type === 'STATS_UPDATE') {
+        console.log('📊 STATS_UPDATE received in popup:', request.stats);
+        statsCard.style.display = 'block';
+        metricsSection.style.display = 'block';
+        updateStats(request.stats);
+        updateCharts(request.stats);
+        sendResponse({ status: 'received' });
+      }
+    } catch (error) {
+      console.error('Error handling STATS_UPDATE:', error);
+      sendResponse({ status: 'error', error: error.message });
     }
   });
 
@@ -278,6 +307,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function updateCharts(stats) {
+    console.log('📈 Updating charts with stats:', stats);
+    console.log('📈 Accuracy chart exists:', !!accuracyChart);
+    console.log('📈 Ratio chart exists:', !!ratioChart);
+
     // Update accuracy chart
     if (accuracyChart) {
       const successfulClicks = stats.successfulClicks || 0;
@@ -286,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const successRate =
         total > 0 ? ((successfulClicks / total) * 100).toFixed(1) : 0;
 
+      console.log('✅ Updating accuracy chart:', { successfulClicks, missedClicks, successRate });
       accuracyChart.data.datasets[0].data = [successfulClicks, missedClicks];
       accuracyChart.update();
 
@@ -293,6 +327,8 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('successfulClicksValue').textContent =
         successfulClicks;
       document.getElementById('missedClicksValue').textContent = missedClicks;
+    } else {
+      console.warn('⚠️ Accuracy chart not initialized yet');
     }
 
     // Update ratio chart
@@ -304,6 +340,7 @@ document.addEventListener('DOMContentLoaded', function () {
           ? ((assistedClicks / (stats.clickCount || 1)) * 100).toFixed(1)
           : 0;
 
+      console.log('✅ Updating ratio chart:', { assistedClicks, unassistedClicks, assistanceRatio });
       ratioChart.data.datasets[0].data = [assistedClicks, unassistedClicks];
       ratioChart.update();
 
@@ -312,6 +349,8 @@ document.addEventListener('DOMContentLoaded', function () {
         unassistedClicks;
       document.getElementById('assistanceRatio').textContent =
         assistanceRatio + '%';
+    } else {
+      console.warn('⚠️ Ratio chart not initialized yet');
     }
   }
 });

@@ -150,7 +150,8 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     // Check if element is interactive
     if (isInteractiveElement(element)) {
       currentTarget = element;
-
+      assistedElement = null; // Clear any previous assisted element
+      
       // Start hesitation timer
       clearTimeout(hesitationTimer);
       hesitationTimer = setTimeout(() => {
@@ -183,25 +184,38 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     if (!isEnabled) return;
 
     stats.clickCount++;
-    const element = e.target || assistedElement;
-
-    // Check if click hit the intended target (successful)
-    if (element && isInteractiveElement(element)) {
-      stats.successfulClicks++;
-      // Increase confidence when successful click
-      stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
-    } else {
-      stats.missedClicks++;
-      // Reduce confidence on missed click
-      stats.confidenceLevel = Math.max(0, stats.confidenceLevel - 3);
+    
+    // Find the actual interactive element that was clicked
+    let clickedElement = e.target;
+    while (clickedElement && !isInteractiveElement(clickedElement)) {
+      clickedElement = clickedElement.parentElement;
     }
 
-    // Clear assistance immediately after click
-    if (element && element.hasAttribute('data-steady-assist')) {
-      clearTimeout(hesitationTimer);
-      setTimeout(() => {
-        clearAssistanceForElement(element);
-      }, 200);
+    // Only count stats if assistance was active
+    if (assistedElement) {
+      // Check if they clicked the exact assisted element
+      if (clickedElement === assistedElement) {
+        stats.successfulClicks++;
+        stats.confidenceLevel = Math.min(100, stats.confidenceLevel + 5);
+        console.log('✅ SUCCESS - Clicked assisted element');
+      } else {
+        // Clicked a different element
+        stats.missedClicks++;
+        stats.confidenceLevel = Math.max(0, stats.confidenceLevel - 3);
+        console.log('❌ MISS - Clicked different element:', {
+          assisted: assistedElement.tagName,
+          clicked: clickedElement ? clickedElement.tagName : 'none'
+        });
+      }
+
+      // Clear assistance immediately
+      if (assistedElement.hasAttribute('data-steady-assist')) {
+        clearTimeout(hesitationTimer);
+        setTimeout(() => {
+          clearAssistanceForElement(assistedElement);
+        }, 100);
+      }
+      assistedElement = null; // Clear for next interaction
     }
 
     updateStats();
@@ -251,6 +265,10 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
   function applyAssistance(element, reason) {
     if (!visualFeedback) return;
+    if (!element) return;
+
+    // Set this as the assisted element for click tracking
+    assistedElement = element;
 
     // Mark element as assisted
     element.setAttribute('data-steady-assist', reason);
@@ -441,10 +459,23 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   function updateStats() {
     // Send stats to popup
     chrome.storage.local.set({ stats: stats });
-    chrome.runtime.sendMessage({
-      type: 'STATS_UPDATE',
-      stats: stats,
-    });
+    console.log('📤 Sending STATS_UPDATE from content script:', stats);
+    
+    // Safely send message with error handling
+    try {
+      if (chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({
+          type: 'STATS_UPDATE',
+          stats: stats,
+        }, function(response) {
+          if (chrome.runtime.lastError) {
+            console.log('Message send acknowledged with error:', chrome.runtime.lastError.message);
+          }
+        });
+      }
+    } catch (error) {
+      console.log('Error sending message:', error.message);
+    }
   }
 
   // ==================== ML HELPER FUNCTIONS ====================
