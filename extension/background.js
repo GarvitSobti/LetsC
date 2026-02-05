@@ -35,4 +35,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Ignore context errors
     }
   }
+  return true; // Keep message channel open
 });
