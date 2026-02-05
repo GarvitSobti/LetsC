@@ -328,6 +328,14 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   // Helper functions
 
   function isInteractiveElement(element) {
+    // Ignore tutorial elements - they should never be affected by assistance
+    if (
+      element.hasAttribute('data-steady-tutorial') ||
+      element.closest('[data-steady-tutorial]')
+    ) {
+      return false;
+    }
+
     const tagName = element.tagName.toLowerCase();
     const interactive = ['a', 'button', 'input', 'select', 'textarea'];
 

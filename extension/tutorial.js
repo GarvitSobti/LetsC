@@ -26,10 +26,7 @@
       message:
         'When you move your mouse slowly over a button,\nwe help you by making it bigger.\n\nTry it now: Move your mouse over this button.',
       showTestButton: true,
-      buttons: [
-        { text: 'Skip', action: 'skip' },
-        { text: 'Next', action: 'next', primary: true, disabled: true },
-      ],
+      buttons: [{ text: 'Skip', action: 'skip' }],
     },
     {
       id: 'feedback',
@@ -61,18 +58,20 @@
 
     overlay = document.createElement('div');
     overlay.id = 'steady-tutorial-overlay';
+    overlay.setAttribute('data-steady-tutorial', 'true'); // Exclude from assistance
     overlay.style.cssText = `
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 2147483645;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2147483647;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      pointer-events: auto;
     `;
 
     document.body.appendChild(overlay);
@@ -97,6 +96,7 @@
 
     // Create card
     const card = document.createElement('div');
+    card.setAttribute('data-steady-tutorial', 'true'); // Exclude from assistance
     card.style.cssText = `
       background: white;
       border-radius: 16px;
@@ -104,6 +104,8 @@
       max-width: 450px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
       position: relative;
+      z-index: 2147483647;
+      pointer-events: auto;
     `;
 
     // Title
@@ -129,13 +131,13 @@
     `;
     card.appendChild(message);
 
-    // Test button (if needed)
+    // Test button (if needed) - declare outside
+    let testBtn = null;
     if (step.showTestButton) {
-      const testBtn = document.createElement('button');
+      testBtn = document.createElement('button');
       testBtn.textContent = 'Hover Over Me!';
+      testBtn.setAttribute('data-steady-tutorial', 'true'); // Exclude from assistance
       testBtn.style.cssText = `
-        display: block;
-        margin: 0 auto 24px;
         padding: 16px 32px;
         background: #3b82f6;
         color: white;
@@ -144,7 +146,9 @@
         font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s;
+        pointer-events: auto;
+        position: relative;
+        z-index: 2147483647;
       `;
 
       testBtn.addEventListener('mouseenter', () => {
@@ -153,23 +157,12 @@
           testBtn.textContent = '✓ Great!';
           testBtn.style.background = '#10b981';
 
-          // Enable Next button
-          const nextBtn = card.querySelector('.btn-next');
-          if (nextBtn) {
-            nextBtn.disabled = false;
-            nextBtn.style.opacity = '1';
-            nextBtn.style.cursor = 'pointer';
-          }
-
-          // Remove test button after a moment
+          // Auto-advance to next step after successful hover
           setTimeout(() => {
-            testBtn.style.opacity = '0';
-            setTimeout(() => testBtn.remove(), 300);
-          }, 800);
+            handleAction('next');
+          }, 1000); // 1 second delay so they see the success message
         }
       });
-
-      card.appendChild(testBtn);
     }
 
     // Buttons
@@ -180,11 +173,17 @@
       justify-content: flex-end;
     `;
 
+    // Add test button to button container if it exists
+    if (testBtn) {
+      btnContainer.appendChild(testBtn);
+    }
+
     step.buttons.forEach(btnConfig => {
       const btn = document.createElement('button');
       btn.textContent = btnConfig.text;
       btn.className = btnConfig.action === 'next' ? 'btn-next' : '';
       btn.disabled = btnConfig.disabled || false;
+      btn.setAttribute('data-steady-tutorial', 'true'); // Exclude from assistance
       btn.style.cssText = `
         padding: 10px 20px;
         border: none;
@@ -193,6 +192,9 @@
         font-weight: 500;
         cursor: ${btnConfig.disabled ? 'not-allowed' : 'pointer'};
         transition: all 0.2s;
+        pointer-events: ${btnConfig.disabled ? 'none' : 'auto'};
+        position: relative;
+        z-index: 2147483647;
         ${
           btnConfig.primary
             ? 'background: #3b82f6; color: white;'
