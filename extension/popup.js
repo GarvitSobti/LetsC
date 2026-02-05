@@ -9,6 +9,28 @@ document.addEventListener('DOMContentLoaded', function () {
   const autoAdapt = document.getElementById('autoAdapt');
   const resetBtn = document.getElementById('resetBtn');
   const statsCard = document.getElementById('statsCard');
+  const helpBtn = document.getElementById('helpBtn');
+
+  // Help button - replay tutorial
+  if (helpBtn) {
+    helpBtn.addEventListener('click', function () {
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(
+            tabs[0].id,
+            { type: 'START_TUTORIAL' },
+            () => {
+              if (chrome.runtime.lastError) {
+                // Content script not ready, ignore
+                console.log('Tutorial will start on next page load');
+              }
+            }
+          );
+        }
+      });
+      window.close(); // Close popup so tutorial can show
+    });
+  }
 
   // Load saved settings
   chrome.storage.local.get(
@@ -110,18 +132,24 @@ document.addEventListener('DOMContentLoaded', function () {
     demoToggle.checked = !!res.demoMode;
     tremorSeverity.value = res.demoSeverity || 2;
     updateTremorLabel(parseInt(tremorSeverity.value));
-  demoSpeed.value = res.demoSpeed || 4;
-  demoSpeedValue.textContent = (demoSpeed.value / 4).toFixed(1) + 'x';
+    demoSpeed.value = res.demoSpeed || 4;
+    demoSpeedValue.textContent = (demoSpeed.value / 4).toFixed(1) + 'x';
   });
 
   demoToggle.addEventListener('change', function () {
     chrome.storage.local.set({ demoMode: demoToggle.checked });
-    sendMessageToActiveTab({ type: 'DEMO_TOGGLE', enabled: demoToggle.checked });
+    sendMessageToActiveTab({
+      type: 'DEMO_TOGGLE',
+      enabled: demoToggle.checked,
+    });
   });
 
   simulateTremor.addEventListener('change', function () {
     chrome.storage.local.set({ demoSimulate: simulateTremor.checked });
-    sendMessageToActiveTab({ type: 'DEMO_OPTIONS', simulate: simulateTremor.checked });
+    sendMessageToActiveTab({
+      type: 'DEMO_OPTIONS',
+      simulate: simulateTremor.checked,
+    });
   });
 
   tremorSeverity.addEventListener('input', function () {
@@ -161,12 +189,18 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.tabs.sendMessage(tabs[0].id, message, function (response) {
           // Ignore errors - content script might not be ready
           if (chrome.runtime.lastError) {
-            console.log('Message not sent to active tab:', chrome.runtime.lastError.message);
+            console.log(
+              'Message not sent to active tab:',
+              chrome.runtime.lastError.message
+            );
             // Fallback: send to background to forward to content scripts
             try {
               chrome.runtime.sendMessage(message);
             } catch (e) {
-              console.log('Fallback runtime.sendMessage failed', e && e.message);
+              console.log(
+                'Fallback runtime.sendMessage failed',
+                e && e.message
+              );
             }
           }
         });

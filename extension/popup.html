@@ -9,8 +9,13 @@
   <body>
     <div class="container">
       <header>
-        <h1>Steady Assist</h1>
-        <p class="tagline">Making the web easier to navigate</p>
+        <div class="header-top">
+          <div>
+            <h1>Steady Assist</h1>
+            <p class="tagline">Making the web easier to navigate</p>
+          </div>
+          <button class="help-btn" id="helpBtn" title="Show tutorial">?</button>
+        </div>
       </header>
 
       <main>
@@ -101,14 +106,32 @@
 
             <div class="setting-item">
               <label for="tremorSeverity">Tremor Severity</label>
-              <input type="range" id="tremorSeverity" min="1" max="3" value="2" />
-              <span class="setting-value" id="tremorSeverityValue">Moderate</span>
+              <input
+                type="range"
+                id="tremorSeverity"
+                min="1"
+                max="3"
+                value="2"
+              />
+              <span class="setting-value" id="tremorSeverityValue"
+                >Moderate</span
+              >
             </div>
 
             <div class="setting-item">
-              <button class="btn-secondary" id="demoRunBtn">Auto-run Demo</button>
-              <button class="btn-secondary" id="demoPauseBtn" style="display:none">Pause</button>
-              <button class="btn-secondary" id="demoOnceBtn">Simulate Once</button>
+              <button class="btn-secondary" id="demoRunBtn">
+                Auto-run Demo
+              </button>
+              <button
+                class="btn-secondary"
+                id="demoPauseBtn"
+                style="display: none"
+              >
+                Pause
+              </button>
+              <button class="btn-secondary" id="demoOnceBtn">
+                Simulate Once
+              </button>
             </div>
 
             <div class="setting-item">
