@@ -1,0 +1,16 @@
+/* Styles injected into every webpage */
+
+.steady-assist-active {
+  position: relative;
+  z-index: 999999 !important;
+}
+
+/* Smooth transitions for all assisted elements */
+[data-steady-assist] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Ensure proper stacking */
+[data-steady-faded] {
+  transition: opacity 0.3s ease !important;
+}
