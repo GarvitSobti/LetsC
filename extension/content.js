@@ -293,6 +293,11 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       return;
     }
 
+    // Clear any PREVIOUS assisted element first (prevent congestion)
+    if (assistedElement && assistedElement !== element) {
+      clearAssistanceForElement(assistedElement);
+    }
+
     console.log('🎯 ASSISTANCE APPLIED - element:', element.tagName, 'reason:', reason);
 
     // Set this as the assisted element for click tracking
@@ -327,19 +332,21 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function expandClickArea(element) {
-    // Increase padding to make element easier to click
-    const currentPadding =
-      parseInt(window.getComputedStyle(element).padding) || 0;
-    const additionalPadding = 8 * (sensitivity / 3); // Scale with sensitivity
+    // Aggressively expand element to make it impossible to miss
+    const currentPadding = parseInt(window.getComputedStyle(element).padding) || 0;
+    const additionalPadding = 20 + (sensitivity * 5); // Much more aggressive: 20-45px
 
     element.style.padding = `${currentPadding + additionalPadding}px`;
+    element.style.transform = 'scale(1.15)'; // Slightly enlarge
+    element.style.transition = 'all 0.2s ease'; // Smooth animation
     element.setAttribute('data-original-padding', currentPadding);
+    element.setAttribute('data-original-transform', element.style.transform);
   }
 
   function simplifySurroundings(element) {
     // Smart button simplification: Hide nearby interactive elements to prevent mis-clicks
     const rect = element.getBoundingClientRect();
-    const SIMPLIFICATION_RADIUS = 120; // Hide buttons within 120px radius
+    const SIMPLIFICATION_RADIUS = 150; // Hide buttons within 150px radius
     
     console.log('🧹 Simplifying surroundings for:', element.tagName);
     
@@ -359,16 +366,18 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
 
       // Hide nearby interactive elements (buttons, links, inputs)
       if (distance < SIMPLIFICATION_RADIUS && distance > 0) {
-        el.style.opacity = '0.15'; // Make them barely visible
+        el.style.opacity = '0.08'; // Make them VERY barely visible (almost invisible)
         el.style.pointerEvents = 'none'; // Prevent accidental clicks
         el.style.cursor = 'not-allowed'; // Show it's disabled
+        el.style.color = '#999'; // Make text greyed out
+        el.style.filter = 'grayscale(100%)'; // Completely desaturate
         el.setAttribute('data-steady-hidden', 'true');
         hiddenCount++;
         console.log('  Hidden nearby button:', el.tagName, 'distance:', distance.toFixed(0) + 'px');
       }
     });
 
-    // Also fade non-interactive visual clutter nearby
+    // Darken/fade non-interactive visual clutter
     const allElements = document.querySelectorAll('*');
     allElements.forEach(el => {
       if (el === element || element.contains(el) || el.contains(element)) {
@@ -383,8 +392,8 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       const distance = calculateDistance(rect, elRect);
 
       // Fade non-interactive elements that are very close
-      if (distance < SIMPLIFICATION_RADIUS * 0.6 && distance > 0) {
-        const fadeAmount = 0.3; // Fade to 30%
+      if (distance < SIMPLIFICATION_RADIUS * 0.7 && distance > 0) {
+        const fadeAmount = 0.15; // Darken to 15% (very dark)
         el.style.opacity = fadeAmount.toString();
         el.setAttribute('data-steady-faded', 'true');
       }
@@ -396,14 +405,16 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   }
 
   function addVisualHighlight(element) {
-    // Add subtle glow/halo effect
-    element.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.3)';
-    element.style.transition = 'all 0.3s ease';
+    // Add BRIGHT, obvious glow effect
+    element.style.boxShadow = '0 0 0 8px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.6)';
+    element.style.outline = '3px solid #3b82f6';
+    element.style.outlineOffset = '2px';
+    element.style.backgroundColor = element.style.backgroundColor || 'rgba(59, 130, 246, 0.1)';
   }
 
   function graduallyRestoreUI(element) {
     // Gradually restore original UI
-    element.style.transition = 'all 0.5s ease';
+    element.style.transition = 'all 0.4s ease';
 
     // Restore padding
     const originalPadding = element.getAttribute('data-original-padding');
@@ -411,12 +422,20 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
       element.style.padding = `${originalPadding}px`;
     }
 
-    // Remove highlight
+    // Restore transform
+    element.style.transform = '';
+    element.removeAttribute('data-original-transform');
+
+    // Remove all highlights
     element.style.boxShadow = '';
+    element.style.outline = '';
+    element.style.outlineOffset = '';
+    element.style.backgroundColor = '';
 
     // Restore faded elements
     document.querySelectorAll('[data-steady-faded]').forEach(el => {
       el.style.opacity = '';
+      el.style.filter = '';
       el.removeAttribute('data-steady-faded');
     });
 
@@ -424,6 +443,9 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
     document.querySelectorAll('[data-steady-hidden]').forEach(el => {
       el.style.opacity = '';
       el.style.pointerEvents = '';
+      el.style.cursor = '';
+      el.style.color = '';
+      el.style.filter = '';
       el.removeAttribute('data-steady-hidden');
     });
 
