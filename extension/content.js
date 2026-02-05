@@ -124,22 +124,29 @@ console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
   function handleMouseMove(e) {
     if (!isEnabled) return;
 
-    // Track cursor position
-    const position = {
-      x: e.clientX,
-      y: e.clientY,
-      timestamp: Date.now(),
-    };
+    try {
+      // Track cursor position
+      const position = {
+        x: e.clientX,
+        y: e.clientY,
+        timestamp: Date.now(),
+      };
 
-    cursorHistory.push(position);
+      cursorHistory.push(position);
 
-    // Keep history limited
-    if (cursorHistory.length > config.historyLength) {
-      cursorHistory.shift();
+      // Keep history limited
+      if (cursorHistory.length > config.historyLength) {
+        cursorHistory.shift();
+      }
+
+      // Analyze cursor behavior
+      analyzeCursorBehavior();
+    } catch (error) {
+      // Extension context may be invalidated after reload
+      if (error.message.includes('context invalidated')) {
+        console.warn('⚠️ Extension reloaded. Please refresh the page.');
+      }
     }
-
-    // Analyze cursor behavior
-    analyzeCursorBehavior();
   }
 
   function handleMouseOver(e) {
