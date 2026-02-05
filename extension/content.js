@@ -1,8 +1,12 @@
 // Content script - runs on every webpage
 // This is where the magic happens: cursor tracking, hesitation detection, UI adaptation
 
+console.log('🔵 CONTENT SCRIPT FILE LOADED - TOP OF FILE');
+
 (function () {
   'use strict';
+  
+  console.log('🟢 INSIDE IIFE - SCRIPT STARTING');
 
   // State
   let isEnabled = true;
@@ -33,22 +37,27 @@
   };
 
   // Initialize
+  console.log('🚀 Steady Assist: Script loaded!');
   init();
 
   function init() {
-    console.log('Steady Assist: Initializing...');
+    console.log('🔧 Steady Assist: Initializing...');
 
     // Load settings
     chrome.storage.local.get(
       ['enabled', 'sensitivity', 'visualFeedback', 'autoAdapt'],
       function (result) {
+        console.log('⚙️ Settings loaded:', result);
         isEnabled = result.enabled !== false;
         sensitivity = result.sensitivity || 3;
         visualFeedback = result.visualFeedback !== false;
         autoAdapt = result.autoAdapt !== false;
 
         if (isEnabled) {
+          console.log('✅ Assistance enabled, attaching listeners');
           attachListeners();
+        } else {
+          console.log('❌ Assistance disabled');
         }
       }
     );
@@ -58,9 +67,11 @@
   }
 
   function attachListeners() {
+    console.log('👂 Attaching event listeners');
     document.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('click', handleClick, true);
     document.addEventListener('mouseover', handleMouseOver, { passive: true });
+    console.log('✅ Steady Assist: Ready and listening!');
   }
 
   function detachListeners() {

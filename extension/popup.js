@@ -38,11 +38,9 @@ document.addEventListener('DOMContentLoaded', function () {
     updateStatus(enabled);
 
     // Send message to content script
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        type: 'TOGGLE_ASSISTANCE',
-        enabled: enabled,
-      });
+    sendMessageToActiveTab({
+      type: 'TOGGLE_ASSISTANCE',
+      enabled: enabled,
     });
   });
 
@@ -54,11 +52,9 @@ document.addEventListener('DOMContentLoaded', function () {
     chrome.storage.local.set({ sensitivity: value });
 
     // Send to content script
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        type: 'UPDATE_SENSITIVITY',
-        sensitivity: value,
-      });
+    sendMessageToActiveTab({
+      type: 'UPDATE_SENSITIVITY',
+      sensitivity: value,
     });
   });
 
@@ -66,11 +62,9 @@ document.addEventListener('DOMContentLoaded', function () {
   visualFeedback.addEventListener('change', function () {
     chrome.storage.local.set({ visualFeedback: visualFeedback.checked });
 
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        type: 'UPDATE_VISUAL_FEEDBACK',
-        enabled: visualFeedback.checked,
-      });
+    sendMessageToActiveTab({
+      type: 'UPDATE_VISUAL_FEEDBACK',
+      enabled: visualFeedback.checked,
     });
   });
 
@@ -89,13 +83,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
       statsCard.style.display = 'none';
 
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: 'RESET_LEARNING',
-        });
+      sendMessageToActiveTab({
+        type: 'RESET_LEARNING',
       });
     }
   });
+
+  // Helper function to safely send messages
+  function sendMessageToActiveTab(message) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, message, function(response) {
+          // Ignore errors - content script might not be ready
+          if (chrome.runtime.lastError) {
+            console.log('Message not sent:', chrome.runtime.lastError.message);
+          }
+        });
+      }
+    });
+  }
 
   // Listen for stats updates from content script
   chrome.runtime.onMessage.addListener(
